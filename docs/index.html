@@ -846,7 +846,28 @@ void mainImage(out vec4 couleurPixel, in vec2 coordonneePixel) {
         }, 2500);
     }
 
-    function buildShaderCode(userCode) {
+    function extractParams(code) {
+        const defineRegex = /#define\s+([A-Za-z_][A-Za-z0-9_]*)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)/g;
+        const params = [];
+        let match;
+        while ((match = defineRegex.exec(code)) !== null) {
+            const name = match[1];
+            const val = parseFloat(match[2]);
+            if (!isNaN(val) && name !== "mainImage") {
+                params.push({ name, value: val, raw: match[2] });
+            }
+        }
+        return params;
+    }
+
+    function buildShaderCode(userCode, params) {
+        let body = userCode;
+        let uniformDecls = "";
+        params.forEach((p) => {
+            const lineRegex = new RegExp('#define\\s+' + p.name + '\\s+[-+]?\\d*\\.?\\d+(?:[eE][-+]?\\d+)?');
+            body = body.replace(lineRegex, "");
+            uniformDecls += `uniform float ${p.name};\n`;
+        });
         return `
 precision highp float;
 uniform vec3 iResolution;
@@ -854,8 +875,8 @@ uniform float iTime;
 uniform float iTimeDelta;
 uniform vec4 iMouse;
 uniform int iFrame;
-
-` + userCode + `
+${uniformDecls}
+` + body + `
 
 void main(void) {
     mainImage(gl_FragColor, gl_FragCoord.xy);
@@ -874,9 +895,11 @@ void main(void) {
         }
     }
 
-    function compileShader() {
+    function compileShader(refreshInspector = true) {
         const code = editor.getValue();
-        const fullCode = buildShaderCode(code);
+        const params = extractParams(code);
+        currentParameters = params;
+        const fullCode = buildShaderCode(code, params);
         
         BABYLON.Effect.ShadersStore["customFragmentShader"] = fullCode;
 
@@ -886,10 +909,11 @@ void main(void) {
         }
 
         try {
+            const uniformNames = ["iResolution", "iTime", "iTimeDelta", "iMouse", "iFrame"].concat(params.map(p => p.name));
             postProcess = new BABYLON.PostProcess(
                 "ShadertoyPostProcess_" + Date.now(),
                 "custom",
-                ["iResolution", "iTime", "iTimeDelta", "iMouse", "iFrame"],
+                uniformNames,
                 null,
                 renderScale,
                 camera,
@@ -921,6 +945,9 @@ void main(void) {
                 effect.setFloat("iTimeDelta", delta);
                 effect.setVector4("iMouse", new BABYLON.Vector4(mouse.x, mouse.y, mouse.z, mouse.w));
                 effect.setInt("iFrame", frameCount);
+                currentParameters.forEach((p) => {
+                    effect.setFloat(p.name, p.value);
+                });
             };
 
         } catch (err) {
@@ -928,7 +955,7 @@ void main(void) {
             document.getElementById("errorText").innerText = err.message || err;
         }
 
-        if (!isProgrammaticChange) {
+        if (!isProgrammaticChange && refreshInspector) {
             parseAndPopulateInspector();
         }
     }
@@ -960,7 +987,7 @@ void main(void) {
         svg.querySelector(".thumb-halo").setAttribute("cx", cx);
     }
 
-    function attachSliderEvents(svg, onChange) {
+    function attachSliderEvents(svg, onChange, onCommit) {
         const W = 260, x0 = 4, x1 = W - 4;
         function posToValue(clientX) {
             const rect = svg.getBoundingClientRect();
@@ -971,6 +998,7 @@ void main(void) {
             return min + pct * (max - min);
         }
         let dragging = false;
+        let lastValue = null;
         function start(e) {
             dragging = true;
             svg.classList.add("dragging");
@@ -982,6 +1010,7 @@ void main(void) {
             if (!dragging) return;
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const val = posToValue(clientX);
+            lastValue = val;
             sliderSetValue(svg, val);
             onChange(val);
         }
@@ -990,6 +1019,7 @@ void main(void) {
             svg.classList.remove("dragging");
             window.removeEventListener("pointermove", move);
             window.removeEventListener("pointerup", end);
+            if (lastValue !== null && onCommit) onCommit(lastValue);
         }
         svg.addEventListener("pointerdown", start);
     }
@@ -999,17 +1029,7 @@ void main(void) {
         const container = document.getElementById("inspectorContainer");
         const filter = document.getElementById("paramSearch").value.toLowerCase();
         
-        const params = [];
-        const defineRegex = /#define\s+([A-Za-z_][A-Za-z0-9_]*)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)/g;
-        let match;
-
-        while ((match = defineRegex.exec(code)) !== null) {
-            const name = match[1];
-            const val = parseFloat(match[2]);
-            if (!isNaN(val) && name !== "mainImage") {
-                params.push({ name, value: val, raw: match[2] });
-            }
-        }
+        const params = extractParams(code);
 
         currentParameters = params;
         container.innerHTML = "";
@@ -1054,7 +1074,9 @@ void main(void) {
                 const numInput = card.querySelector(".param-num-input");
                 let display = Math.abs(val) < 0.01 && val !== 0 ? val.toFixed(4) : val.toFixed(3).replace(/0+$/,'').replace(/\.$/,'');
                 numInput.value = display;
-                updateCodeParameter(param.name, val);
+                setLiveParameterValue(param.name, val);
+            }, (val) => {
+                commitParameterToEditor(param.name, val);
             });
         });
 
@@ -1065,35 +1087,42 @@ void main(void) {
                 const card = e.target.closest(".param-card");
                 const svg = card.querySelector("svg.svg-slider");
                 if (svg) sliderSetValue(svg, val);
-                updateCodeParameter(name, val);
+                setLiveParameterValue(name, val);
+                commitParameterToEditor(name, val);
             });
         });
     }
 
-    function updateCodeParameter(paramName, newValue) {
+    function setLiveParameterValue(paramName, newValue) {
+        // Push the value straight to the live shader uniform — no recompile,
+        // no editor text touched, so this is cheap enough to run every drag tick.
+        const p = currentParameters.find((p) => p.name === paramName);
+        if (p) p.value = newValue;
+    }
+
+    function commitParameterToEditor(paramName, newValue) {
+        // Sync the tweaked value back into the visible code. Only called once,
+        // when a drag ends (or from the numeric input), since rewriting the
+        // whole editor on every pointermove is what caused the render stalls.
         const code = editor.getValue();
         const pattern = new RegExp('(#define\\s+' + paramName + '\\s+)[-+]?\\d*\\.?\\d+(?:[eE][-+]?\\d+)?');
-        
+
         if (pattern.test(code)) {
             let formatted = newValue.toString();
             if (!formatted.includes('.') && !formatted.includes('e')) {
                 formatted += '.0';
             }
-            
+
             isProgrammaticChange = true;
             const cursor = editor.getCursor();
             const scroll = editor.getScrollInfo();
-            
+
             const updatedCode = code.replace(pattern, '$1' + formatted);
             editor.setValue(updatedCode);
-            
+
             editor.setCursor(cursor);
             editor.scrollTo(scroll.left, scroll.top);
             isProgrammaticChange = false;
-
-            if (document.getElementById("autoCompileCheck").checked) {
-                compileShader();
-            }
         }
     }
 
@@ -1472,12 +1501,7 @@ void main(void) {
         engine.resize();
     });
 
-    window.onload = () => {
-        compileShader();
-    };
-    if (document.readyState === "complete") {
-        compileShader();
-    }
+    compileShader();
 </script>
 </body>
 </html>

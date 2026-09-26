@@ -1,300 +1,679 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Babylon.js Shadertoy</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.babylonjs.com/babylon.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/clike/clike.min.js"></script>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0b0f17;
-            color: #e2e8f0;
-            overflow: hidden;
-        }
-        .font-mono-code {
-            font-family: 'Fira Code', monospace;
-        }
-        .CodeMirror {
-            height: 100% !important;
-            font-family: 'Fira Code', monospace !important;
-            font-size: 13px !important;
-            background-color: #0d1117 !important;
-        }
-        .CodeMirror-gutters {
-            background-color: #161b22 !important;
-            border-right: 1px solid #21262d !important;
-        }
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0d1117;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #21262d;
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #30363d;
-        }
-        .gold-gradient-text {
-            background: linear-gradient(135deg, #fff2a3 0%, #d4af37 50%, #aa7c11 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .gold-border {
-            border-color: #d4af37;
-        }
-        .custom-range {
-            accent-color: #d4af37;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BS — Shader Studio</title>
+<script src="https://cdn.babylonjs.com/babylon.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/clike/clike.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void: #07080a;
+    --charcoal: #0f1114;
+    --panel: #14171c;
+    --panel-2: #191d23;
+    --line: #262b33;
+    --line-soft: #1c2027;
+    --brass: #c9a15a;
+    --brass-bright: #f0d28f;
+    --brass-dim: #8a6f3f;
+    --bronze: #8a5a3a;
+    --patina: #5fae94;
+    --ember: #d9694a;
+    --ink: #d7d3c8;
+    --ink-dim: #7c8089;
+    --ink-faint: #4b4f57;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--void);
+    color:var(--ink);
+    font-family:'Space Grotesk', sans-serif;
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+    user-select:none;
+  }
+  .serif{ font-family:'Fraunces', serif; }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+
+  /* subtle grain */
+  .grain{
+    position:fixed; inset:0; pointer-events:none; z-index:200; opacity:.035; mix-blend-mode:overlay;
+  }
+
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+  ::-webkit-scrollbar-thumb{ background:#242832; border-radius:4px; }
+  ::-webkit-scrollbar-thumb:hover{ background:var(--brass-dim); }
+
+  .CodeMirror{
+    height:100% !important;
+    font-family:'JetBrains Mono', monospace !important;
+    font-size:12.5px !important;
+    line-height:1.65 !important;
+    background:var(--charcoal) !important;
+    color:#c9cdd6 !important;
+    padding-top:4px;
+  }
+  .CodeMirror-gutters{ background:var(--charcoal) !important; border-right:1px solid var(--line-soft) !important; }
+  .CodeMirror-linenumber{ color:#3a3f49 !important; }
+  .CodeMirror-cursor{ border-left:1.5px solid var(--brass-bright) !important; }
+  .cm-def{ color:#e8b768 !important; }
+  .cm-number{ color:var(--patina) !important; }
+  .cm-keyword{ color:#c586c0 !important; }
+  .cm-comment{ color:#4b5566 !important; font-style:italic; }
+
+  /* ---- Layout shell ---- */
+  .app{ height:100vh; width:100vw; display:flex; flex-direction:column; }
+
+  /* ---- Top bar ---- */
+  .topbar{
+    height:56px; flex:0 0 auto; display:flex; align-items:center; justify-content:space-between;
+    padding:0 18px; background:linear-gradient(180deg, #101319, #0c0e12);
+    border-bottom:1px solid var(--line); position:relative; z-index:30;
+  }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .brand-mark{ width:34px; height:34px; flex:0 0 auto; }
+  .brand-text h1{
+    margin:0; font-size:15px; letter-spacing:.14em; font-weight:600;
+    color:var(--brass-bright); font-family:'Space Grotesk',sans-serif;
+  }
+  .brand-text p{ margin:1px 0 0; font-size:10px; color:var(--ink-faint); letter-spacing:.06em; }
+
+  .telemetry{ display:flex; align-items:center; gap:0; }
+  .tele-item{ display:flex; align-items:center; gap:7px; padding:0 16px; position:relative; }
+  .tele-item + .tele-item::before{
+    content:""; position:absolute; left:0; top:50%; transform:translateY(-50%);
+    width:1px; height:18px; background:var(--line);
+  }
+  .tele-label{ font-size:9.5px; letter-spacing:.1em; color:var(--ink-faint); text-transform:uppercase; }
+  .tele-value{ font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:500; }
+
+  .preset-wrap{ display:flex; align-items:center; gap:10px; }
+  .preset-label{ font-size:10px; letter-spacing:.1em; color:var(--ink-faint); text-transform:uppercase; }
+  .preset-select{
+    appearance:none; background:var(--panel); border:1px solid var(--line); color:var(--brass-bright);
+    font-family:'Space Grotesk',sans-serif; font-size:12px; padding:7px 30px 7px 12px; border-radius:3px;
+    cursor:pointer; position:relative;
+  }
+  .preset-select-box{ position:relative; }
+  .preset-select-box svg{ position:absolute; right:9px; top:50%; transform:translateY(-50%); pointer-events:none; }
+
+  /* ---- Body split ---- */
+  .body-split{ flex:1 1 auto; display:flex; min-height:0; position:relative; }
+
+  /* ---- Left inspector rail ---- */
+  .inspector{
+    width:308px; flex:0 0 auto; background:var(--charcoal); border-right:1px solid var(--line);
+    display:flex; flex-direction:column; min-height:0;
+  }
+  .inspector-head{
+    padding:14px 14px 10px; border-bottom:1px solid var(--line-soft);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .inspector-title{ display:flex; align-items:center; gap:8px; }
+  .inspector-title span{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink); font-weight:600; }
+  .reset-btn{
+    background:transparent; border:1px solid var(--line); color:var(--ink-dim); font-size:10px;
+    letter-spacing:.06em; padding:5px 9px; border-radius:3px; cursor:pointer; display:flex; align-items:center; gap:5px;
+    font-family:'Space Grotesk',sans-serif; transition:.15s;
+  }
+  .reset-btn:hover{ border-color:var(--ember); color:var(--ember); }
+
+  .search-row{ padding:10px 14px; border-bottom:1px solid var(--line-soft); }
+  .search-box{ position:relative; }
+  .search-box input{
+    width:100%; background:var(--panel); border:1px solid var(--line); border-radius:3px;
+    padding:8px 10px 8px 30px; color:var(--ink); font-size:12px; font-family:'Space Grotesk',sans-serif;
+  }
+  .search-box input::placeholder{ color:var(--ink-faint); }
+  .search-box input:focus{ outline:none; border-color:var(--brass-dim); }
+  .search-box svg{ position:absolute; left:9px; top:50%; transform:translateY(-50%); }
+
+  .param-list{ flex:1 1 auto; overflow-y:auto; padding:10px 12px; display:flex; flex-direction:column; gap:8px; }
+
+  .param-card{
+    background:var(--panel); border:1px solid var(--line-soft); border-radius:5px; padding:10px 11px 12px;
+    transition:border-color .15s;
+  }
+  .param-card:hover{ border-color:#33393f; }
+  .param-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:9px; gap:8px; }
+  .param-name{
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--brass-bright);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:.01em;
+  }
+  .param-num{
+    width:64px; flex:0 0 auto; background:var(--charcoal); border:1px solid var(--line); border-radius:3px;
+    color:var(--patina); font-family:'JetBrains Mono',monospace; font-size:11px; text-align:right;
+    padding:3px 6px;
+  }
+  .param-num:focus{ outline:none; border-color:var(--brass-dim); }
+
+  .uniforms-panel{
+    border-top:1px solid var(--line-soft); padding:12px 14px 14px; background:#0d0f13;
+  }
+  .uniforms-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:9px; }
+  .uniforms-head span{ font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-faint); font-weight:600; }
+  .uniform-row{ display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:11px; padding:2.5px 0; }
+  .uniform-row .k{ color:var(--ink-faint); }
+  .uniform-row .v{ color:#a8adb8; }
+
+  /* ---- Center stage ---- */
+  .stage{
+    flex:1 1 auto; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:22px; position:relative; min-width:0;
+    background:
+      radial-gradient(ellipse at 50% 0%, #141821 0%, transparent 60%),
+      var(--void);
+  }
+  .stage::before{
+    content:""; position:absolute; inset:0; opacity:.5; pointer-events:none;
+    background-image:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size:34px 34px;
+    mask-image: radial-gradient(ellipse 60% 50% at 50% 45%, black 0%, transparent 75%);
+  }
+
+  #viewportFrameContainer{ position:relative; z-index:1; }
+  #renderCanvas{ background:#000; }
+
+  .transport{
+    margin-top:18px; width:100%; display:flex; align-items:center; justify-content:space-between;
+    background:linear-gradient(180deg,#14171c,#101318); border:1px solid var(--line); border-radius:8px;
+    padding:9px 14px; z-index:1; gap:14px;
+  }
+  .transport-group{ display:flex; align-items:center; gap:8px; }
+
+  .icon-btn{
+    width:34px; height:34px; border-radius:6px; background:var(--panel); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; transition:.15s; color:var(--ink-dim);
+  }
+  .icon-btn:hover{ border-color:var(--brass-dim); color:var(--brass-bright); }
+  .icon-btn.primary{
+    background:linear-gradient(180deg, var(--brass-bright), var(--brass) 60%, var(--brass-dim));
+    border-color:var(--brass-dim); color:#1a1305;
+  }
+  .icon-btn.primary:hover{ filter:brightness(1.08); }
+
+  .pill-btn{
+    display:flex; align-items:center; gap:7px; padding:0 13px; height:34px; border-radius:6px;
+    background:var(--panel); border:1px solid var(--line); color:var(--ink); font-size:11.5px;
+    font-family:'Space Grotesk',sans-serif; cursor:pointer; transition:.15s; letter-spacing:.02em;
+  }
+  .pill-btn:hover{ border-color:var(--brass-dim); color:var(--brass-bright); }
+
+  .scale-toggle{ display:flex; align-items:center; gap:8px; }
+  .scale-label{ font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-faint); }
+  .scale-btns{ display:flex; gap:5px; }
+  .scale-btn{
+    height:34px; padding:0 12px; border-radius:6px; background:var(--panel); border:1px solid var(--line);
+    color:var(--ink-dim); font-family:'JetBrains Mono',monospace; font-size:11.5px; cursor:pointer; transition:.15s;
+  }
+  .scale-btn.active{
+    background:rgba(201,161,90,.14); border-color:var(--brass); color:var(--brass-bright); font-weight:600;
+  }
+
+  /* ---- Right editor rail ---- */
+  .editor-rail{
+    width:520px; flex:0 0 auto; background:var(--charcoal); border-left:1px solid var(--line);
+    display:flex; flex-direction:column; min-height:0;
+  }
+  .editor-head{
+    height:48px; flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; padding:0 14px;
+    border-bottom:1px solid var(--line-soft); background:#101318;
+  }
+  .editor-title{ display:flex; align-items:center; gap:8px; }
+  .editor-title span{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; font-weight:600; }
+
+  .compile-btn{
+    display:flex; align-items:center; gap:6px; padding:6px 13px; border-radius:4px; cursor:pointer;
+    background:linear-gradient(180deg, #6fc4a1, #4a9d78); border:1px solid #3c8666; color:#052013;
+    font-family:'Space Grotesk',sans-serif; font-size:11.5px; font-weight:600; transition:.15s;
+  }
+  .compile-btn:hover{ filter:brightness(1.08); }
+
+  .auto-toggle{ display:flex; align-items:center; gap:6px; cursor:pointer; margin-left:10px; }
+  .auto-toggle span{ font-size:10.5px; color:var(--ink-dim); }
+
+  .editor-toolbar{
+    height:36px; flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; padding:0 12px;
+    border-bottom:1px solid var(--line-soft); background:var(--void);
+  }
+  .toolbar-btns{ display:flex; gap:6px; }
+  .tb-btn{
+    display:flex; align-items:center; gap:5px; padding:4px 9px; border-radius:3px; background:var(--panel);
+    border:1px solid var(--line-soft); color:var(--ink-dim); font-size:10.5px; cursor:pointer; transition:.15s;
+    font-family:'Space Grotesk',sans-serif;
+  }
+  .tb-btn:hover{ color:var(--brass-bright); border-color:var(--brass-dim); }
+  .status-ok{ display:flex; align-items:center; gap:5px; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--patina); }
+  .status-err{ display:flex; align-items:center; gap:5px; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ember); }
+
+  .editor-body{ flex:1 1 auto; position:relative; min-height:0; overflow:hidden; }
+
+  .error-console{
+    flex:0 0 auto; max-height:110px; border-top:1px solid #3a1f18; background:#160c0a; padding:9px 12px;
+    overflow-y:auto; display:none;
+  }
+  .error-console.show{ display:block; }
+  .error-head{ display:flex; align-items:center; gap:6px; color:var(--ember); font-size:11px; font-weight:600; margin-bottom:5px; }
+  .error-text{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#e9a898; white-space:pre-wrap; line-height:1.5; margin:0; }
+
+  /* ---- Footer ---- */
+  .statusbar{
+    height:26px; flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; padding:0 16px;
+    background:#0a0b0d; border-top:1px solid var(--line); font-size:10px; color:var(--ink-faint); letter-spacing:.04em;
+  }
+
+  /* ---- Toast ---- */
+  .toast{
+    position:fixed; bottom:22px; right:22px; z-index:100; display:flex; align-items:center; gap:9px;
+    background:linear-gradient(180deg,#1a1e25,#14171c); border:1px solid var(--brass-dim); border-radius:6px;
+    padding:10px 16px; font-size:12px; color:var(--ink); transform:translateY(14px); opacity:0; pointer-events:none;
+    transition:all .3s cubic-bezier(.2,.9,.3,1); box-shadow:0 12px 30px rgba(0,0,0,.5);
+  }
+  .toast.show{ transform:translateY(0); opacity:1; }
+
+  /* custom svg slider */
+  .svg-slider{ display:block; width:100%; height:18px; cursor:pointer; touch-action:none; }
+  .svg-slider .track{ stroke:#262b33; }
+  .svg-slider .fill{ stroke:url(#brassLine); }
+  .svg-slider .thumb-halo{ opacity:0; transition:opacity .15s; }
+  .svg-slider:hover .thumb-halo, .svg-slider.dragging .thumb-halo{ opacity:.35; }
+
+  /* ---- Export modal ---- */
+  .export-modal{
+    position:fixed; inset:0; z-index:150; display:none; align-items:center; justify-content:center;
+    background:rgba(4,5,6,.72); backdrop-filter:blur(3px);
+  }
+  .export-modal.show{ display:flex; }
+  .export-card{
+    width:400px; max-width:92vw; background:linear-gradient(180deg,#15181e,#101216);
+    border:1px solid var(--line); border-radius:10px; padding:18px 20px 20px;
+    box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(201,161,90,.06);
+  }
+  .export-card-head{ display:flex; align-items:center; justify-content:between; justify-content:space-between; margin-bottom:6px; }
+  .export-title{ font-size:13px; font-weight:600; letter-spacing:.04em; color:var(--ink); }
+  .export-desc{ font-size:11.5px; line-height:1.55; color:var(--ink-dim); margin:4px 0 16px; }
+
+  .export-field{ margin-bottom:14px; }
+  .export-field-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:7px; }
+  .export-field-row label{ font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); }
+  .export-field-value{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--brass-bright); }
+
+  .export-row-2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+
+  .seg-control{ display:flex; background:var(--charcoal); border:1px solid var(--line); border-radius:5px; padding:2px; gap:2px; }
+  .seg-btn{
+    flex:1; background:transparent; border:none; color:var(--ink-dim); font-family:'JetBrains Mono',monospace;
+    font-size:11px; padding:6px 0; border-radius:3px; cursor:pointer; transition:.15s;
+  }
+  .seg-btn.active{ background:rgba(201,161,90,.16); color:var(--brass-bright); font-weight:600; }
+  .seg-btn:hover:not(.active){ color:var(--ink); }
+
+  .export-progress-wrap{ display:none; margin:6px 0 16px; }
+  .export-progress-wrap.show{ display:block; }
+  .export-progress-head{ display:flex; justify-content:space-between; margin-bottom:6px; }
+  .export-progress-head span{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink-dim); }
+  #exportProgressPct{ color:var(--brass-bright) !important; }
+  .export-progress-bar{ width:100%; height:6px; display:block; }
+
+  .export-actions{ display:flex; gap:10px; }
+  .export-note{ font-size:10.5px; line-height:1.5; color:var(--ember); margin:8px 0 0; opacity:.85; }
+</style>
 </head>
-<body class="h-screen w-screen flex flex-col bg-slate-950 text-slate-100 select-none">
+<body class="select-none">
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="brassLine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#8a6f3f"/>
+      <stop offset="100%" stop-color="#f0d28f"/>
+    </linearGradient>
+  </defs>
+</svg>
 
-    <header class="h-14 bg-slate-900/90 border-b border-slate-800 px-4 flex items-center justify-between z-20 backdrop-blur-md">
-        <div class="flex items-center space-x-3">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-300 via-amber-500 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-500/20">
-                <i class="fa-solid fa-cube text-slate-950 text-base"></i>
-            </div>
-            <div>
-                <h1 class="text-base font-bold gold-gradient-text tracking-wide">BABYLON.JS SHADERTOY</h1>
-                <p class="text-[10px] text-slate-400 font-medium">Realtime GLSL Canvas Environment</p>
-            </div>
-        </div>
+<div class="app">
 
-        <div class="flex items-center space-x-6 text-xs">
-            <div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-800">
-                <span class="text-slate-400">FPS:</span>
-                <span id="fpsVal" class="font-mono text-emerald-400 font-semibold">60</span>
-            </div>
-            <div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-800">
-                <span class="text-slate-400">Time:</span>
-                <span id="timeVal" class="font-mono text-amber-400 font-semibold">0.00s</span>
-            </div>
-            <div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-800">
-                <span class="text-slate-400">Res:</span>
-                <span id="resVal" class="font-mono text-indigo-400 font-semibold">800x450</span>
-            </div>
-        </div>
-
-        <div class="flex items-center space-x-2">
-            <label class="text-xs text-slate-400 mr-1">Preset:</label>
-            <select id="presetSelect" class="bg-slate-800 text-xs border border-slate-700 text-amber-200 rounded-md px-2.5 py-1.5 focus:outline-none focus:border-amber-500">
-                <option value="default">Default Shader</option>
-                <option value="warp">Warp Speed</option>
-                <option value="calm">Calm Ambient</option>
-            </select>
-        </div>
-    </header>
-
-    <div class="flex-1 flex overflow-hidden relative">
-
-        <aside class="w-80 bg-slate-900/60 border-r border-slate-800 flex flex-col z-10 backdrop-blur-sm">
-            <div class="p-3 border-b border-slate-800 flex items-center justify-between bg-slate-900/80">
-                <div class="flex items-center space-x-2">
-                    <i class="fa-solid fa-sliders text-amber-400 text-sm"></i>
-                    <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-200">Inspector</h2>
-                </div>
-                <button id="resetParamsBtn" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded border border-slate-700 transition">
-                    Reset
-                </button>
-            </div>
-
-            <div class="p-2 border-b border-slate-800 bg-slate-950/40">
-                <div class="relative">
-                    <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-xs text-slate-500"></i>
-                    <input type="text" id="paramSearch" placeholder="Filter parameters..." class="w-full bg-slate-900 border border-slate-800 text-xs rounded-md pl-8 pr-3 py-1.5 text-slate-200 focus:outline-none focus:border-amber-500">
-                </div>
-            </div>
-
-            <div id="inspectorContainer" class="flex-1 overflow-y-auto p-3 space-y-3">
-            </div>
-
-            <div class="p-3 border-t border-slate-800 bg-slate-950/60 text-[11px] space-y-1.5">
-                <div class="text-slate-400 font-semibold mb-1 flex items-center justify-between">
-                    <span>UNIFORMS MONITOR</span>
-                    <i class="fa-solid fa-microchip text-slate-500"></i>
-                </div>
-                <div class="flex justify-between font-mono text-slate-300">
-                    <span class="text-slate-500">iResolution:</span>
-                    <span id="uRes">800, 450, 1</span>
-                </div>
-                <div class="flex justify-between font-mono text-slate-300">
-                    <span class="text-slate-500">iMouse:</span>
-                    <span id="uMouse">0, 0, 0, 0</span>
-                </div>
-                <div class="flex justify-between font-mono text-slate-300">
-                    <span class="text-slate-500">iFrame:</span>
-                    <span id="uFrame">0</span>
-                </div>
-            </div>
-        </aside>
-
-        <main class="flex-1 bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-            <div class="relative flex flex-col items-center justify-center max-w-full max-h-full">
-                
-                <div id="viewportFrameContainer" class="relative shadow-2xl flex items-center justify-center" style="width: 860px; height: 510px; max-width: 95vw; max-height: 70vh; aspect-ratio: 860/510;">
-                    
-                    <canvas id="renderCanvas" class="absolute bg-black rounded" style="left: 3.48837%; top: 5.88235%; width: 93.02326%; height: 88.23529%; z-index: 1;"></canvas>
-
-                    <svg id="goldFrameSvg" viewBox="0 0 860 510" class="absolute left-0 top-0 w-full h-full pointer-events-none drop-shadow-2xl" style="z-index: 2;">
-                        <defs>
-                            <linearGradient id="goldGradMain" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stop-color="#bf953f" />
-                                <stop offset="25%" stop-color="#fcf6ba" />
-                                <stop offset="50%" stop-color="#b38728" />
-                                <stop offset="75%" stop-color="#fbf5b7" />
-                                <stop offset="100%" stop-color="#aa771c" />
-                            </linearGradient>
-                            <linearGradient id="goldGradHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.7" />
-                                <stop offset="50%" stop-color="#d4af37" stop-opacity="0.3" />
-                                <stop offset="100%" stop-color="#4a3000" stop-opacity="0.9" />
-                            </linearGradient>
-                            <radialGradient id="gemGrad" cx="50%" cy="50%" r="50%">
-                                <stop offset="0%" stop-color="#fff0a3" />
-                                <stop offset="60%" stop-color="#c99728" />
-                                <stop offset="100%" stop-color="#422a00" />
-                            </radialGradient>
-                        </defs>
-
-                        <path fill-rule="evenodd" fill="url(#goldGradMain)" d="M0,0 H860 V510 H0 Z M30,30 H830 V480 H30 Z" />
-
-                        <rect x="0" y="0" width="860" height="510" fill="none" stroke="#3b2602" stroke-width="3" />
-                        <rect x="5" y="5" width="850" height="500" fill="none" stroke="url(#goldGradHighlight)" stroke-width="3" />
-                        <rect x="14" y="14" width="832" height="482" fill="none" stroke="#261801" stroke-width="2" />
-                        <rect x="22" y="22" width="816" height="466" fill="none" stroke="url(#goldGradMain)" stroke-width="3" />
-                        <rect x="30" y="30" width="800" height="450" fill="none" stroke="#120a00" stroke-width="4" />
-                        <rect x="31" y="31" width="798" height="448" fill="none" stroke="#ffe27a" stroke-width="1" stroke-opacity="0.4" />
-
-                        <g fill="url(#goldGradMain)" stroke="#382200" stroke-width="1">
-                            <path d="M0,0 L50,0 C32,18 32,32 30,50 L30,30 L0,0 Z" />
-                            <path d="M860,0 L810,0 C828,18 828,32 830,50 L830,30 L860,0 Z" />
-                            <path d="M0,510 L50,510 C32,492 32,478 30,460 L30,480 L0,510 Z" />
-                            <path d="M860,510 L810,510 C828,492 828,478 830,460 L830,480 L860,510 Z" />
-
-                            <circle cx="15" cy="15" r="8" fill="url(#gemGrad)" stroke="#261700" stroke-width="1.5" />
-                            <circle cx="845" cy="15" r="8" fill="url(#gemGrad)" stroke="#261700" stroke-width="1.5" />
-                            <circle cx="15" cy="495" r="8" fill="url(#gemGrad)" stroke="#261700" stroke-width="1.5" />
-                            <circle cx="845" cy="495" r="8" fill="url(#gemGrad)" stroke="#261700" stroke-width="1.5" />
-
-                            <path d="M430,3 L445,15 L430,27 L415,15 Z" fill="url(#gemGrad)" />
-                            <path d="M430,483 L445,495 L430,507 L415,495 Z" fill="url(#gemGrad)" />
-                            <path d="M3,255 L15,267 L27,255 L15,243 Z" fill="url(#gemGrad)" />
-                            <path d="M833,255 L845,267 L857,255 L845,243 Z" fill="url(#gemGrad)" />
-                        </g>
-                    </svg>
-                </div>
-
-                <div class="mt-4 flex items-center justify-between w-full max-w-[860px] bg-slate-900/90 border border-slate-800 rounded-xl px-4 py-2 text-xs shadow-xl backdrop-blur-md">
-                    <div class="flex items-center space-x-2">
-                        <button id="playPauseBtn" class="w-8 h-8 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold flex items-center justify-center transition shadow-md shadow-amber-500/20">
-                            <i id="playIcon" class="fa-solid fa-pause"></i>
-                        </button>
-                        <button id="resetTimeBtn" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center border border-slate-700 transition">
-                            <i class="fa-solid fa-rotate-left"></i>
-                        </button>
-                    </div>
-
-                    <div class="flex items-center space-x-2">
-                        <label class="text-slate-400">Scale:</label>
-                        <button class="scaleBtn px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 hover:text-amber-300" data-scale="0.5">0.5x</button>
-                        <button class="scaleBtn px-2 py-1 rounded bg-amber-500/20 border border-amber-500 text-amber-300 font-semibold" data-scale="1.0">1.0x</button>
-                    </div>
-
-                    <div class="flex items-center space-x-2">
-                        <button id="toggleFrameBtn" class="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
-                            <i class="fa-solid fa-border-top-left"></i>
-                            <span>Frame</span>
-                        </button>
-                        <button id="screenshotBtn" class="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
-                            <i class="fa-solid fa-camera"></i>
-                            <span>Snap</span>
-                        </button>
-                        <button id="fullscreenBtn" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center border border-slate-700 transition">
-                            <i class="fa-solid fa-expand"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </main>
-
-        <aside class="w-[480px] bg-slate-900/80 border-l border-slate-800 flex flex-col z-10 backdrop-blur-sm">
-            <div class="p-3 border-b border-slate-800 flex items-center justify-between bg-slate-900">
-                <div class="flex items-center space-x-2">
-                    <i class="fa-solid fa-code text-amber-400 text-sm"></i>
-                    <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-200">GLSL Editor</h2>
-                </div>
-
-                <div class="flex items-center space-x-2">
-                    <button id="compileBtn" class="px-3 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center space-x-1 shadow-md shadow-emerald-600/20 transition">
-                        <i class="fa-solid fa-play text-[10px]"></i>
-                        <span>Compile</span>
-                    </button>
-                    <label class="flex items-center space-x-1.5 text-[11px] text-slate-400 cursor-pointer ml-2">
-                        <input type="checkbox" id="autoCompileCheck" checked class="rounded border-slate-700 bg-slate-800 text-amber-500 focus:ring-0">
-                        <span>Auto</span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="px-3 py-1.5 border-b border-slate-800 bg-slate-950 flex items-center justify-between text-xs">
-                <div class="flex items-center space-x-2">
-                    <button id="copyBtn" class="text-slate-400 hover:text-amber-300 transition px-2 py-1 rounded bg-slate-900 border border-slate-800 flex items-center space-x-1">
-                        <i class="fa-regular fa-copy"></i>
-                        <span>Copy</span>
-                    </button>
-                    <button id="pasteBtn" class="text-slate-400 hover:text-amber-300 transition px-2 py-1 rounded bg-slate-900 border border-slate-800 flex items-center space-x-1">
-                        <i class="fa-regular fa-paste"></i>
-                        <span>Paste</span>
-                    </button>
-                </div>
-                <div id="compileStatus" class="text-[11px] font-mono text-emerald-400 flex items-center space-x-1">
-                    <i class="fa-solid fa-check-circle"></i>
-                    <span>Ready</span>
-                </div>
-            </div>
-
-            <div class="flex-1 relative overflow-hidden">
-                <textarea id="codeEditor"></textarea>
-            </div>
-
-            <div id="errorConsole" class="h-24 border-t border-slate-800 bg-slate-950 p-2 overflow-y-auto font-mono text-xs text-rose-400 hidden">
-                <div class="flex items-center space-x-1 text-rose-500 font-bold mb-1">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    <span>Compiler Error</span>
-                </div>
-                <pre id="errorText" class="whitespace-pre-wrap text-[11px] leading-relaxed"></pre>
-            </div>
-        </aside>
-
+  <!-- ===================== TOP BAR ===================== -->
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 40 40" fill="none">
+        <rect x="1" y="1" width="38" height="38" rx="9" fill="#0d0f13" stroke="#2a2f38"/>
+        <path d="M20 6 L31 13 V27 L20 34 L9 27 V13 Z" fill="none" stroke="url(#brassLine)" stroke-width="1.4"/>
+        <path d="M20 12 L26 15.5 V22.5 L20 26 L14 22.5 V15.5 Z" fill="none" stroke="#e8b768" stroke-width="1.1" opacity=".8"/>
+        <circle cx="20" cy="19" r="2.6" fill="url(#gemGradTop)"/>
+        <defs>
+          <radialGradient id="gemGradTop" cx="35%" cy="30%" r="70%">
+            <stop offset="0%" stop-color="#fff2c9"/>
+            <stop offset="55%" stop-color="#d9a752"/>
+            <stop offset="100%" stop-color="#5f4318"/>
+          </radialGradient>
+        </defs>
+      </svg>
+      <div class="brand-text">
+        <h1>BS</h1>
+        <p>REAL-TIME SHADER ATELIER</p>
+      </div>
     </div>
 
-    <footer class="h-8 shrink-0 bg-slate-900/90 border-t border-slate-800 px-4 flex items-center justify-between text-[11px] text-slate-500 z-20 backdrop-blur-md">
-        <span class="tracking-wide">BABYLON.JS SHADERTOY &middot; Realtime GLSL Canvas Environment</span>
-        <span class="flex items-center space-x-1.5">
-            <i class="fa-solid fa-code text-slate-600"></i>
-            <span>WebGL &bull; Babylon.js &bull; CodeMirror</span>
-        </span>
-    </footer>
-
-    <div id="toast" class="fixed bottom-6 right-6 bg-amber-500 text-slate-950 font-bold px-4 py-2 rounded-lg shadow-xl text-xs flex items-center space-x-2 transition-all duration-300 transform translate-y-12 opacity-0 z-50">
-        <i class="fa-solid fa-circle-info"></i>
-        <span id="toastMsg">Notification</span>
+    <div class="telemetry">
+      <div class="tele-item">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M3 17L9 11L13 15L21 6" stroke="#5fae94" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 6H21V12" stroke="#5fae94" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="tele-label">FPS</span>
+        <span id="fpsVal" class="tele-value" style="color:#5fae94">60</span>
+      </div>
+      <div class="tele-item">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#e8b768" stroke-width="2"/><path d="M12 7V12L15.5 14" stroke="#e8b768" stroke-width="2" stroke-linecap="round"/></svg>
+        <span class="tele-label">Time</span>
+        <span id="timeVal" class="tele-value" style="color:#e8b768">0.00s</span>
+      </div>
+      <div class="tele-item">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="1.5" stroke="#7fa8d9" stroke-width="2"/><path d="M3 15H21" stroke="#7fa8d9" stroke-width="1.4"/></svg>
+        <span class="tele-label">Resolution</span>
+        <span id="resVal" class="tele-value" style="color:#7fa8d9">800×450</span>
+      </div>
     </div>
 
-    <script>
-        const DEFAULT_SHADER = `#define DISTORSION_LENTILLE_MIN 0.5
+    <div class="preset-wrap">
+      <span class="preset-label">Preset</span>
+      <div class="preset-select-box">
+        <select id="presetSelect" class="preset-select">
+          <option value="default">Default Shader</option>
+          <option value="warp">Warp Speed</option>
+          <option value="calm">Calm Drift</option>
+        </select>
+        <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1L5 5L9 1" stroke="#c9a15a" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================== BODY ===================== -->
+  <div class="body-split">
+
+    <!-- ---------- INSPECTOR ---------- -->
+    <aside class="inspector">
+      <div class="inspector-head">
+        <div class="inspector-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 21V14M4 10V3M12 21V12M12 8V3M20 21V16M20 12V3M1 14H7M9 8H15M17 16H23" stroke="#c9a15a" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span>Inspector</span>
+        </div>
+        <button id="resetParamsBtn" class="reset-btn">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 1 3 6.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3 21v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Reset
+        </button>
+      </div>
+
+      <div class="search-row">
+        <div class="search-box">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#4b4f57" stroke-width="2"/><path d="M20 20L16.5 16.5" stroke="#4b4f57" stroke-width="2" stroke-linecap="round"/></svg>
+          <input type="text" id="paramSearch" placeholder="Filter parameters…">
+        </div>
+      </div>
+
+      <div id="inspectorContainer" class="param-list"></div>
+
+      <div class="uniforms-panel">
+        <div class="uniforms-head">
+          <span>Uniforms Monitor</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="6" y="6" width="12" height="12" rx="1" stroke="#4b4f57" stroke-width="1.6"/><path d="M9 2V6M15 2V6M9 18V22M15 18V22M2 9H6M2 15H6M18 9H22M18 15H22" stroke="#4b4f57" stroke-width="1.4"/></svg>
+        </div>
+        <div class="uniform-row"><span class="k">iResolution</span><span class="v" id="uRes">800, 450, 1</span></div>
+        <div class="uniform-row"><span class="k">iMouse</span><span class="v" id="uMouse">0, 0, 0, 0</span></div>
+        <div class="uniform-row"><span class="k">iFrame</span><span class="v" id="uFrame">0</span></div>
+      </div>
+    </aside>
+
+    <!-- ---------- STAGE ---------- -->
+    <main class="stage">
+      <div id="viewportFrameContainer" style="width:860px;height:510px;max-width:94%;max-height:66vh;aspect-ratio:860/510;">
+
+        <canvas id="renderCanvas" style="position:absolute;left:3.48837%;top:5.88235%;width:93.02326%;height:88.23529%;z-index:1;border-radius:1px;"></canvas>
+
+        <svg id="goldFrameSvg" viewBox="0 0 860 510" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2;" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="brassMain" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#7a6238"/>
+              <stop offset="22%" stop-color="#e8cd8c"/>
+              <stop offset="50%" stop-color="#9c7d42"/>
+              <stop offset="78%" stop-color="#e3c680"/>
+              <stop offset="100%" stop-color="#6b5228"/>
+            </linearGradient>
+            <linearGradient id="brassEdge" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#fff3cf" stop-opacity=".55"/>
+              <stop offset="45%" stop-color="#9c7d42" stop-opacity=".25"/>
+              <stop offset="100%" stop-color="#241a08" stop-opacity=".9"/>
+            </linearGradient>
+            <radialGradient id="gemGrad2" cx="38%" cy="30%" r="70%">
+              <stop offset="0%" stop-color="#fff2c9"/>
+              <stop offset="55%" stop-color="#c99728"/>
+              <stop offset="100%" stop-color="#3a2600"/>
+            </radialGradient>
+          </defs>
+
+          <path fill-rule="evenodd" fill="url(#brassMain)" d="M0,0 H860 V510 H0 Z M26,26 H834 V484 H26 Z"/>
+          <rect x="0" y="0" width="860" height="510" fill="none" stroke="#241a08" stroke-width="2"/>
+          <rect x="4" y="4" width="852" height="502" fill="none" stroke="url(#brassEdge)" stroke-width="2"/>
+          <rect x="26" y="26" width="808" height="458" fill="none" stroke="#0c0700" stroke-width="3"/>
+          <rect x="27" y="27" width="806" height="456" fill="none" stroke="#ffe8a8" stroke-opacity=".3" stroke-width="1"/>
+
+          <!-- fine engraved tick marks along the frame, like a precision instrument -->
+          <g stroke="#3a2c10" stroke-width="1" opacity=".55">
+            <path d="M60,10 V16 M120,10 V16 M180,10 V16 M240,10 V16 M300,10 V16 M360,10 V16 M500,10 V16 M560,10 V16 M620,10 V16 M680,10 V16 M740,10 V16 M800,10 V16"/>
+            <path d="M60,500 V494 M120,500 V494 M180,500 V494 M240,500 V494 M300,500 V494 M360,500 V494 M500,500 V494 M560,500 V494 M620,500 V494 M680,500 V494 M740,500 V494 M800,500 V494"/>
+          </g>
+
+          <g fill="url(#brassMain)" stroke="#2b1e08" stroke-width="1">
+            <path d="M0,0 L46,0 C30,16 30,29 26,46 L26,26 L0,0 Z"/>
+            <path d="M860,0 L814,0 C830,16 830,29 834,46 L834,26 L860,0 Z"/>
+            <path d="M0,510 L46,510 C30,494 30,481 26,464 L26,484 L0,510 Z"/>
+            <path d="M860,510 L814,510 C830,494 830,481 834,464 L834,484 L860,510 Z"/>
+
+            <circle cx="13" cy="13" r="7" fill="url(#gemGrad2)" stroke="#22160a" stroke-width="1.4"/>
+            <circle cx="847" cy="13" r="7" fill="url(#gemGrad2)" stroke="#22160a" stroke-width="1.4"/>
+            <circle cx="13" cy="497" r="7" fill="url(#gemGrad2)" stroke="#22160a" stroke-width="1.4"/>
+            <circle cx="847" cy="497" r="7" fill="url(#gemGrad2)" stroke="#22160a" stroke-width="1.4"/>
+
+            <path d="M430,3 L442,13 L430,23 L418,13 Z" fill="url(#gemGrad2)"/>
+            <path d="M430,487 L442,497 L430,507 L418,497 Z" fill="url(#gemGrad2)"/>
+            <path d="M3,255 L13,265 L23,255 L13,245 Z" fill="url(#gemGrad2)"/>
+            <path d="M837,255 L847,265 L857,255 L847,245 Z" fill="url(#gemGrad2)"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- transport -->
+      <div class="transport" style="max-width:860px;">
+        <div class="transport-group">
+          <button id="playPauseBtn" class="icon-btn primary" title="Play / Pause">
+            <svg id="playIconSvg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+          </button>
+          <button id="resetTimeBtn" class="icon-btn" title="Reset time">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 1 3 6.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3 21v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+
+        <div class="scale-toggle">
+          <span class="scale-label">Scale</span>
+          <div class="scale-btns">
+            <button class="scaleBtn scale-btn" data-scale="0.5">0.5×</button>
+            <button class="scaleBtn scale-btn active" data-scale="1.0">1.0×</button>
+          </div>
+        </div>
+
+        <div class="transport-group">
+          <button id="toggleFrameBtn" class="pill-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M3 9V3H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 15V21H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Frame</span>
+          </button>
+          <button id="screenshotBtn" class="pill-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="1.8"/></svg>
+            <span>Snap</span>
+          </button>
+          <button id="exportBtn" class="pill-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M10 9l5 3-5 3z" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>
+            <span>Export</span>
+          </button>
+          <button id="fullscreenBtn" class="icon-btn" title="Fullscreen">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ---------- EDITOR ---------- -->
+    <aside class="editor-rail">
+      <div class="editor-head">
+        <div class="editor-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M16 18L22 12L16 6" stroke="#c9a15a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 6L2 12L8 18" stroke="#c9a15a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>GLSL Editor</span>
+        </div>
+        <div style="display:flex;align-items:center;">
+          <button id="compileBtn" class="compile-btn">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3L19 12L5 21Z"/></svg>
+            Compile
+          </button>
+          <label class="auto-toggle">
+            <input type="checkbox" id="autoCompileCheck" checked style="accent-color:#c9a15a;width:13px;height:13px;">
+            <span>Auto</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="editor-toolbar">
+        <div class="toolbar-btns">
+          <button id="copyBtn" class="tb-btn">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="13" height="13" rx="1.5" stroke="currentColor" stroke-width="1.8"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.8"/></svg>
+            Copy
+          </button>
+          <button id="pasteBtn" class="tb-btn">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" stroke="currentColor" stroke-width="1.8"/><rect x="8" y="2" width="8" height="4" rx="1" stroke="currentColor" stroke-width="1.8"/></svg>
+            Paste
+          </button>
+        </div>
+        <div id="compileStatus" class="status-ok">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M8 12l2.5 2.5L16 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Ready</span>
+        </div>
+      </div>
+
+      <div class="editor-body">
+        <textarea id="codeEditor"></textarea>
+      </div>
+
+      <div id="errorConsole" class="error-console">
+        <div class="error-head">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="1.8"/><path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Compiler Error
+        </div>
+        <pre id="errorText" class="error-text"></pre>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer class="statusbar">
+    <span>BS &nbsp;·&nbsp; Real-time GLSL Render Environment</span>
+    <span style="display:flex;align-items:center;gap:8px;">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M16 18L22 12L16 6M8 6L2 12L8 18" stroke="#4b4f57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      WebGL &nbsp;·&nbsp; Babylon.js &nbsp;·&nbsp; CodeMirror
+    </span>
+  </footer>
+</div>
+
+<div id="exportModal" class="export-modal">
+  <div class="export-card">
+    <div class="export-card-head">
+      <div style="display:flex;align-items:center;gap:9px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2" stroke="#c9a15a" stroke-width="1.8"/><path d="M10 9l5 3-5 3z" fill="#c9a15a"/></svg>
+        <span class="export-title">Video Export</span>
+      </div>
+      <button id="exportCloseBtn" class="icon-btn" style="width:28px;height:28px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <p class="export-desc">Renders every frame of the animation off the live render loop, then encodes it to <span id="exportFormatDesc" class="mono" style="color:#e8b768;">.webm</span> — a clip you can download.</p>
+
+    <div class="export-field" style="margin-bottom:14px;">
+      <div class="export-field-row"><label>Format</label></div>
+      <div class="seg-control" id="formatSeg">
+        <button class="seg-btn active" data-format="webm">WebM</button>
+        <button class="seg-btn" data-format="mp4">MP4</button>
+      </div>
+      <p id="mp4Note" class="export-note" style="display:none;">MP4 recording depends on your browser's built-in encoder. If it isn't available here, use WebM — it works everywhere, or convert the WebM afterwards.</p>
+    </div>
+
+    <div class="export-row-2">
+      <div class="export-field">
+        <div class="export-field-row"><label>Frame rate</label></div>
+        <div class="seg-control" id="fpsSeg">
+          <button class="seg-btn" data-fps="24">24</button>
+          <button class="seg-btn active" data-fps="30">30</button>
+          <button class="seg-btn" data-fps="60">60</button>
+        </div>
+      </div>
+      <div class="export-field">
+        <div class="export-field-row"><label>Quality</label></div>
+        <div class="seg-control" id="qualitySeg">
+          <button class="seg-btn" data-q="0.6">Std</button>
+          <button class="seg-btn active" data-q="0.9">High</button>
+          <button class="seg-btn" data-q="1">Max</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="export-field" style="margin-top:2px;">
+      <div class="export-field-row"><label>Duration</label><span id="exportDurationVal" class="export-field-value">5.0 s</span></div>
+      <svg id="durationSlider" class="svg-slider" viewBox="0 0 260 18" preserveAspectRatio="none" data-min="1" data-max="20" data-value="5">
+        <line class="track" x1="4" y1="9" x2="256" y2="9" stroke-width="3" stroke-linecap="round"/>
+        <line class="fill" x1="4" y1="9" x2="70" y2="9" stroke-width="3" stroke-linecap="round"/>
+        <circle class="thumb-halo" cx="70" cy="9" r="8" fill="#c9a15a"/>
+        <circle class="thumb" cx="70" cy="9" r="5.5" fill="#f0d28f" stroke="#4a3712" stroke-width="1.2"/>
+      </svg>
+    </div>
+
+    <div id="exportProgressWrap" class="export-progress-wrap">
+      <div class="export-progress-head">
+        <span id="exportProgressLabel">Encoding frame 0 / 0</span>
+        <span id="exportProgressPct">0%</span>
+      </div>
+      <svg class="export-progress-bar" viewBox="0 0 400 6" preserveAspectRatio="none">
+        <rect x="0" y="0" width="400" height="6" rx="3" fill="#1c2027"/>
+        <rect id="exportProgressFill" x="0" y="0" width="0" height="6" rx="3" fill="url(#brassLine)"/>
+      </svg>
+    </div>
+
+    <div class="export-actions">
+      <button id="exportCancelBtn" class="pill-btn" style="display:none;">Cancel</button>
+      <button id="exportStartBtn" class="compile-btn" style="width:100%;justify-content:center;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3L19 12L5 21Z"/></svg>
+        <span id="exportStartLabel">Render WebM</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#c9a15a" stroke-width="2"/><path d="M12 8V13M12 16H12.01" stroke="#c9a15a" stroke-width="2" stroke-linecap="round"/></svg>
+  <span id="toastMsg">Notification</span>
+</div>
+
+<svg class="grain" xmlns="http://www.w3.org/2000/svg">
+  <filter id="grainFilter"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+  <rect width="100%" height="100%" filter="url(#grainFilter)"/>
+</svg>
+
+<script>
+    const DEFAULT_SHADER = `#define DISTORSION_LENTILLE_MIN 0.5
 #define DISTORSION_LENTILLE_AMP 0.4
 #define DISTORSION_LENTILLE_FREQ 1.5
 
@@ -368,7 +747,7 @@ void mainImage(out vec4 couleurPixel, in vec2 coordonneePixel) {
     couleurPixel = pow(tanh(couleurPixel / SHADER_TAILLE_BOITE_LOG), vec4(SHADER_GAMMA));
 }`;
 
-        const WARP_SHADER = `#define VITESSE_TUNNEL 1.5
+    const WARP_SHADER = `#define VITESSE_TUNNEL 1.5
 #define NOMBRE_COUCHES 3.0
 #define DENSITE_ETOILES 80.0
 #define LONGUEUR_TRAINEE 0.35
@@ -395,7 +774,7 @@ void mainImage(out vec4 couleurPixel, in vec2 coordonneePixel) {
     couleurPixel = vec4(couleur, 1.0);
 }`;
 
-        const CALM_SHADER = `#define VITESSE_DERIVE 0.08
+    const CALM_SHADER = `#define VITESSE_DERIVE 0.08
 #define ECHELLE_MOTIF 2.5
 #define NOMBRE_OCTAVES 4.0
 
@@ -428,46 +807,47 @@ void mainImage(out vec4 couleurPixel, in vec2 coordonneePixel) {
     couleurPixel = vec4(couleur, 1.0);
 }`;
 
-        const SHADER_PRESETS = { default: DEFAULT_SHADER, warp: WARP_SHADER, calm: CALM_SHADER };
+    const SHADER_PRESETS = { default: DEFAULT_SHADER, warp: WARP_SHADER, calm: CALM_SHADER };
 
-        let canvas = document.getElementById("renderCanvas");
-        let engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
-        let scene = new BABYLON.Scene(engine);
-        let camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0, 0, -1), scene);
-        
-        let postProcess = null;
-        let isPlaying = true;
-        let currentTime = 0;
-        let lastTime = performance.now();
-        let frameCount = 0;
-        let mouse = { x: 0, y: 0, z: 0, w: 0 };
-        let renderScale = 1.0;
-        let isProgrammaticChange = false;
-        let currentParameters = [];
+    let canvas = document.getElementById("renderCanvas");
+    let engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
+    let scene = new BABYLON.Scene(engine);
+    let camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0, 0, -1), scene);
+    
+    let postProcess = null;
+    let isPlaying = true;
+    let currentTime = 0;
+    let lastTime = performance.now();
+    let frameCount = 0;
+    let mouse = { x: 0, y: 0, z: 0, w: 0 };
+    let renderScale = 1.0;
+    let isProgrammaticChange = false;
+    let currentParameters = [];
 
-        let editor = CodeMirror.fromTextArea(document.getElementById("codeEditor"), {
-            mode: "x-shader/x-fragment",
-            theme: "dracula",
-            lineNumbers: true,
-            matchBrackets: true,
-            indentUnit: 4,
-            tabSize: 4,
-            lineWrapping: true
-        });
+    let editor = CodeMirror.fromTextArea(document.getElementById("codeEditor"), {
+        mode: "x-shader/x-fragment",
+        theme: "dracula",
+        lineNumbers: true,
+        matchBrackets: true,
+        indentUnit: 4,
+        tabSize: 4,
+        lineWrapping: true
+    });
 
-        editor.setValue(DEFAULT_SHADER);
+    editor.setValue(DEFAULT_SHADER);
 
-        function showToast(msg) {
-            const toast = document.getElementById("toast");
-            document.getElementById("toastMsg").innerText = msg;
-            toast.classList.remove("translate-y-12", "opacity-0");
-            setTimeout(() => {
-                toast.classList.add("translate-y-12", "opacity-0");
-            }, 2500);
-        }
+    function showToast(msg) {
+        const toast = document.getElementById("toast");
+        document.getElementById("toastMsg").innerText = msg;
+        toast.classList.add("show");
+        clearTimeout(window._toastTimer);
+        window._toastTimer = setTimeout(() => {
+            toast.classList.remove("show");
+        }, 2500);
+    }
 
-        function buildShaderCode(userCode) {
-            return `
+    function buildShaderCode(userCode) {
+        return `
 precision highp float;
 uniform vec3 iResolution;
 uniform float iTime;
@@ -481,334 +861,623 @@ void main(void) {
     mainImage(gl_FragColor, gl_FragCoord.xy);
 }
 `;
+    }
+
+    function setCompileStatus(ok, msg) {
+        const el = document.getElementById("compileStatus");
+        if (ok) {
+            el.className = "status-ok";
+            el.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M8 12l2.5 2.5L16 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>' + msg + '</span>';
+        } else {
+            el.className = "status-err";
+            el.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M15 9L9 15M9 9l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>' + msg + '</span>';
+        }
+    }
+
+    function compileShader() {
+        const code = editor.getValue();
+        const fullCode = buildShaderCode(code);
+        
+        BABYLON.Effect.ShadersStore["customFragmentShader"] = fullCode;
+
+        if (postProcess) {
+            postProcess.dispose();
+            postProcess = null;
         }
 
-        function compileShader() {
-            const code = editor.getValue();
-            const fullCode = buildShaderCode(code);
-            
-            BABYLON.Effect.ShadersStore["customFragmentShader"] = fullCode;
+        try {
+            postProcess = new BABYLON.PostProcess(
+                "ShadertoyPostProcess_" + Date.now(),
+                "custom",
+                ["iResolution", "iTime", "iTimeDelta", "iMouse", "iFrame"],
+                null,
+                renderScale,
+                camera,
+                BABYLON.Texture.BILINEAR_SAMPLINGMODE,
+                engine,
+                false
+            );
 
-            if (postProcess) {
-                postProcess.dispose();
-                postProcess = null;
-            }
-
-            try {
-                postProcess = new BABYLON.PostProcess(
-                    "ShadertoyPostProcess_" + Date.now(),
-                    "custom",
-                    ["iResolution", "iTime", "iTimeDelta", "iMouse", "iFrame"],
-                    null,
-                    renderScale,
-                    camera,
-                    BABYLON.Texture.BILINEAR_SAMPLINGMODE,
-                    engine,
-                    false
-                );
-
-                postProcess.onEffectCreatedObservable.add((effect) => {
-                    effect.onCompiled = () => {
-                        document.getElementById("compileStatus").className = "text-[11px] font-mono text-emerald-400 flex items-center space-x-1";
-                        document.getElementById("compileStatus").innerHTML = '<i class="fa-solid fa-check-circle"></i><span>Compiled</span>';
-                        document.getElementById("errorConsole").classList.add("hidden");
-                    };
-                    effect.onError = (eff, err) => {
-                        document.getElementById("compileStatus").className = "text-[11px] font-mono text-rose-400 flex items-center space-x-1";
-                        document.getElementById("compileStatus").innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i><span>Error</span>';
-                        document.getElementById("errorConsole").classList.remove("hidden");
-                        document.getElementById("errorText").innerText = err;
-                    };
-                });
-
-                let lastFrameTime = performance.now();
-                postProcess.onApply = (effect) => {
-                    const now = performance.now();
-                    const delta = (now - lastFrameTime) / 1000;
-                    lastFrameTime = now;
-
-                    effect.setFloat3("iResolution", canvas.width, canvas.height, 1.0);
-                    effect.setFloat("iTime", currentTime);
-                    effect.setFloat("iTimeDelta", delta);
-                    effect.setVector4("iMouse", new BABYLON.Vector4(mouse.x, mouse.y, mouse.z, mouse.w));
-                    effect.setInt("iFrame", frameCount);
+            postProcess.onEffectCreatedObservable.add((effect) => {
+                effect.onCompiled = () => {
+                    setCompileStatus(true, "Compiled");
+                    document.getElementById("errorConsole").classList.remove("show");
                 };
+                effect.onError = (eff, err) => {
+                    setCompileStatus(false, "Error");
+                    document.getElementById("errorConsole").classList.add("show");
+                    document.getElementById("errorText").innerText = err;
+                };
+            });
 
-            } catch (err) {
-                document.getElementById("errorConsole").classList.remove("hidden");
-                document.getElementById("errorText").innerText = err.message || err;
-            }
+            let lastFrameTime = performance.now();
+            postProcess.onApply = (effect) => {
+                const now = performance.now();
+                const delta = (now - lastFrameTime) / 1000;
+                lastFrameTime = now;
 
-            if (!isProgrammaticChange) {
-                parseAndPopulateInspector();
+                effect.setFloat3("iResolution", canvas.width, canvas.height, 1.0);
+                effect.setFloat("iTime", currentTime);
+                effect.setFloat("iTimeDelta", delta);
+                effect.setVector4("iMouse", new BABYLON.Vector4(mouse.x, mouse.y, mouse.z, mouse.w));
+                effect.setInt("iFrame", frameCount);
+            };
+
+        } catch (err) {
+            document.getElementById("errorConsole").classList.add("show");
+            document.getElementById("errorText").innerText = err.message || err;
+        }
+
+        if (!isProgrammaticChange) {
+            parseAndPopulateInspector();
+        }
+    }
+
+    // ---- custom SVG slider builder ----
+    function buildSliderSVG(id, min, max, value) {
+        const W = 260, H = 18, y = 9, x0 = 4, x1 = W - 4;
+        const pct = Math.max(0, Math.min(1, (value - min) / (max - min || 1)));
+        const cx = x0 + pct * (x1 - x0);
+        return `
+        <svg class="svg-slider" id="${id}" data-min="${min}" data-max="${max}" data-value="${value}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+            <line class="track" x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" stroke-width="3" stroke-linecap="round"/>
+            <line class="fill" x1="${x0}" y1="${y}" x2="${cx}" y2="${y}" stroke-width="3" stroke-linecap="round"/>
+            <circle class="thumb-halo" cx="${cx}" cy="${y}" r="8" fill="#c9a15a"/>
+            <circle class="thumb" cx="${cx}" cy="${y}" r="5.5" fill="#f0d28f" stroke="#4a3712" stroke-width="1.2"/>
+        </svg>`;
+    }
+
+    function sliderSetValue(svg, value) {
+        const min = parseFloat(svg.getAttribute("data-min"));
+        const max = parseFloat(svg.getAttribute("data-max"));
+        const W = 260, x0 = 4, x1 = W - 4, y = 9;
+        let pct = (value - min) / ((max - min) || 1);
+        pct = Math.max(0, Math.min(1, pct));
+        const cx = x0 + pct * (x1 - x0);
+        svg.setAttribute("data-value", value);
+        svg.querySelector(".fill").setAttribute("x2", cx);
+        svg.querySelector(".thumb").setAttribute("cx", cx);
+        svg.querySelector(".thumb-halo").setAttribute("cx", cx);
+    }
+
+    function attachSliderEvents(svg, onChange) {
+        const W = 260, x0 = 4, x1 = W - 4;
+        function posToValue(clientX) {
+            const rect = svg.getBoundingClientRect();
+            let pct = (clientX - rect.left) / rect.width;
+            pct = Math.max(0, Math.min(1, pct));
+            const min = parseFloat(svg.getAttribute("data-min"));
+            const max = parseFloat(svg.getAttribute("data-max"));
+            return min + pct * (max - min);
+        }
+        let dragging = false;
+        function start(e) {
+            dragging = true;
+            svg.classList.add("dragging");
+            move(e);
+            window.addEventListener("pointermove", move);
+            window.addEventListener("pointerup", end);
+        }
+        function move(e) {
+            if (!dragging) return;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const val = posToValue(clientX);
+            sliderSetValue(svg, val);
+            onChange(val);
+        }
+        function end() {
+            dragging = false;
+            svg.classList.remove("dragging");
+            window.removeEventListener("pointermove", move);
+            window.removeEventListener("pointerup", end);
+        }
+        svg.addEventListener("pointerdown", start);
+    }
+
+    function parseAndPopulateInspector() {
+        const code = editor.getValue();
+        const container = document.getElementById("inspectorContainer");
+        const filter = document.getElementById("paramSearch").value.toLowerCase();
+        
+        const params = [];
+        const defineRegex = /#define\s+([A-Za-z_][A-Za-z0-9_]*)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)/g;
+        let match;
+
+        while ((match = defineRegex.exec(code)) !== null) {
+            const name = match[1];
+            const val = parseFloat(match[2]);
+            if (!isNaN(val) && name !== "mainImage") {
+                params.push({ name, value: val, raw: match[2] });
             }
         }
 
-        function parseAndPopulateInspector() {
-            const code = editor.getValue();
-            const container = document.getElementById("inspectorContainer");
-            const filter = document.getElementById("paramSearch").value.toLowerCase();
+        currentParameters = params;
+        container.innerHTML = "";
+
+        params.forEach((param, idx) => {
+            if (filter && !param.name.toLowerCase().includes(filter)) return;
+
+            let min = 0;
+            let max = param.value * 2.5;
+            if (param.value < 0) {
+                min = param.value * 3;
+                max = Math.abs(param.value);
+            } else if (param.value === 0) {
+                min = -1.0;
+                max = 1.0;
+            }
+            if (min === max) {
+                min = 0;
+                max = 10;
+            }
+
+            let step = 0.01;
+            if (Math.abs(param.value) < 0.01 && param.value !== 0) step = 0.0001;
+            else if (Math.abs(param.value) > 50) step = 1.0;
+
+            const sliderId = "slider_" + idx + "_" + param.name;
+
+            const card = document.createElement("div");
+            card.className = "param-card";
+            card.innerHTML = `
+                <div class="param-top">
+                    <span class="param-name" title="${param.name}">${param.name}</span>
+                    <input type="number" step="${step}" value="${param.value}" class="param-num-input param-num" data-name="${param.name}">
+                </div>
+                ${buildSliderSVG(sliderId, min, max, param.value)}
+            `;
+
+            container.appendChild(card);
+
+            const svg = card.querySelector("svg.svg-slider");
+            attachSliderEvents(svg, (val) => {
+                const numInput = card.querySelector(".param-num-input");
+                let display = Math.abs(val) < 0.01 && val !== 0 ? val.toFixed(4) : val.toFixed(3).replace(/0+$/,'').replace(/\.$/,'');
+                numInput.value = display;
+                updateCodeParameter(param.name, val);
+            });
+        });
+
+        container.querySelectorAll(".param-num-input").forEach(input => {
+            input.addEventListener("change", (e) => {
+                const name = e.target.getAttribute("data-name");
+                const val = parseFloat(e.target.value);
+                const card = e.target.closest(".param-card");
+                const svg = card.querySelector("svg.svg-slider");
+                if (svg) sliderSetValue(svg, val);
+                updateCodeParameter(name, val);
+            });
+        });
+    }
+
+    function updateCodeParameter(paramName, newValue) {
+        const code = editor.getValue();
+        const pattern = new RegExp('(#define\\s+' + paramName + '\\s+)[-+]?\\d*\\.?\\d+(?:[eE][-+]?\\d+)?');
+        
+        if (pattern.test(code)) {
+            let formatted = newValue.toString();
+            if (!formatted.includes('.') && !formatted.includes('e')) {
+                formatted += '.0';
+            }
             
-            const params = [];
-            const defineRegex = /#define\s+([A-Za-z_][A-Za-z0-9_]*)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)/g;
-            let match;
-
-            while ((match = defineRegex.exec(code)) !== null) {
-                const name = match[1];
-                const val = parseFloat(match[2]);
-                if (!isNaN(val) && name !== "mainImage") {
-                    params.push({ name, value: val, raw: match[2] });
-                }
-            }
-
-            currentParameters = params;
-            container.innerHTML = "";
-
-            params.forEach(param => {
-                if (filter && !param.name.toLowerCase().includes(filter)) return;
-
-                const card = document.createElement("div");
-                card.className = "bg-slate-950/80 border border-slate-800 rounded-lg p-2.5 space-y-1.5 hover:border-slate-700 transition";
-
-                let min = 0;
-                let max = param.value * 2.5;
-                if (param.value < 0) {
-                    min = param.value * 3;
-                    max = Math.abs(param.value);
-                } else if (param.value === 0) {
-                    min = -1.0;
-                    max = 1.0;
-                }
-                if (min === max) {
-                    min = 0;
-                    max = 10;
-                }
-
-                let step = 0.01;
-                if (Math.abs(param.value) < 0.01 && param.value !== 0) step = 0.0001;
-                else if (Math.abs(param.value) > 50) step = 1.0;
-
-                card.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-mono font-medium text-amber-200 truncate pr-2" title="${param.name}">${param.name}</span>
-                        <input type="number" step="${step}" value="${param.value}" class="param-num-input w-20 bg-slate-900 border border-slate-800 text-xs text-right font-mono text-emerald-400 rounded px-1.5 py-0.5 focus:outline-none focus:border-amber-500" data-name="${param.name}">
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <input type="range" min="${min}" max="${max}" step="${step}" value="${param.value}" class="param-slider custom-range flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer" data-name="${param.name}">
-                    </div>
-                `;
-
-                container.appendChild(card);
-            });
-
-            document.querySelectorAll(".param-slider").forEach(slider => {
-                slider.addEventListener("input", (e) => {
-                    const name = e.target.getAttribute("data-name");
-                    const val = parseFloat(e.target.value);
-                    const numInput = e.target.closest("div").previousElementSibling.querySelector(".param-num-input");
-                    if (numInput) numInput.value = val;
-                    updateCodeParameter(name, val);
-                });
-            });
-
-            document.querySelectorAll(".param-num-input").forEach(input => {
-                input.addEventListener("change", (e) => {
-                    const name = e.target.getAttribute("data-name");
-                    const val = parseFloat(e.target.value);
-                    const slider = e.target.closest("div").nextElementSibling.querySelector(".param-slider");
-                    if (slider) slider.value = val;
-                    updateCodeParameter(name, val);
-                });
-            });
-        }
-
-        function updateCodeParameter(paramName, newValue) {
-            const code = editor.getValue();
-            const pattern = new RegExp('(#define\\s+' + paramName + '\\s+)[-+]?\\d*\\.?\\d+(?:[eE][-+]?\\d+)?');
+            isProgrammaticChange = true;
+            const cursor = editor.getCursor();
+            const scroll = editor.getScrollInfo();
             
-            if (pattern.test(code)) {
-                let formatted = newValue.toString();
-                if (!formatted.includes('.') && !formatted.includes('e')) {
-                    formatted += '.0';
-                }
-                
-                isProgrammaticChange = true;
-                const cursor = editor.getCursor();
-                const scroll = editor.getScrollInfo();
-                
-                const updatedCode = code.replace(pattern, '$1' + formatted);
-                editor.setValue(updatedCode);
-                
-                editor.setCursor(cursor);
-                editor.scrollTo(scroll.left, scroll.top);
-                isProgrammaticChange = false;
+            const updatedCode = code.replace(pattern, '$1' + formatted);
+            editor.setValue(updatedCode);
+            
+            editor.setCursor(cursor);
+            editor.scrollTo(scroll.left, scroll.top);
+            isProgrammaticChange = false;
 
-                if (document.getElementById("autoCompileCheck").checked) {
-                    compileShader();
-                }
+            if (document.getElementById("autoCompileCheck").checked) {
+                compileShader();
             }
         }
+    }
 
-        document.getElementById("compileBtn").addEventListener("click", () => {
+    document.getElementById("compileBtn").addEventListener("click", () => {
+        compileShader();
+        showToast("Shader recompiled");
+    });
+
+    document.getElementById("paramSearch").addEventListener("input", parseAndPopulateInspector);
+
+    document.getElementById("presetSelect").addEventListener("change", (e) => {
+        const preset = SHADER_PRESETS[e.target.value];
+        if (preset) {
+            editor.setValue(preset);
             compileShader();
-            showToast("Shader recompiled");
-        });
+            showToast("Preset loaded: " + e.target.options[e.target.selectedIndex].text);
+        }
+    });
 
-        document.getElementById("paramSearch").addEventListener("input", parseAndPopulateInspector);
+    document.getElementById("resetParamsBtn").addEventListener("click", () => {
+        editor.setValue(DEFAULT_SHADER);
+        compileShader();
+        showToast("Parameters reset");
+    });
 
-        document.getElementById("presetSelect").addEventListener("change", (e) => {
-            const preset = SHADER_PRESETS[e.target.value];
-            if (preset) {
-                editor.setValue(preset);
-                compileShader();
-                showToast("Preset loaded: " + e.target.options[e.target.selectedIndex].text);
-            }
-        });
+    let playing = true;
+    document.getElementById("playPauseBtn").addEventListener("click", () => {
+        isPlaying = !isPlaying;
+        const icon = document.getElementById("playIconSvg");
+        icon.innerHTML = isPlaying
+            ? '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>'
+            : '<path d="M7 4L20 12L7 20Z"/>';
+    });
 
-        document.getElementById("resetParamsBtn").addEventListener("click", () => {
-            editor.setValue(DEFAULT_SHADER);
+    document.getElementById("resetTimeBtn").addEventListener("click", () => {
+        currentTime = 0;
+        frameCount = 0;
+    });
+
+    document.querySelectorAll(".scaleBtn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            document.querySelectorAll(".scaleBtn").forEach(b => b.classList.remove("active"));
+            e.currentTarget.classList.add("active");
+            renderScale = parseFloat(e.currentTarget.getAttribute("data-scale"));
             compileShader();
-            showToast("Parameters reset");
+        });
+    });
+
+    document.getElementById("toggleFrameBtn").addEventListener("click", () => {
+        const frame = document.getElementById("goldFrameSvg");
+        frame.style.display = (frame.style.display === "none") ? "block" : "none";
+    });
+
+    document.getElementById("screenshotBtn").addEventListener("click", () => {
+        engine.onEndFrameObservable.addOnce(() => {
+            const a = document.createElement("a");
+            a.href = canvas.toDataURL("image/png");
+            a.download = "bs_shader.png";
+            a.click();
+            showToast("Screenshot saved");
+        });
+    });
+
+    // =========================================================
+    // Frame-by-frame video export (WebM / MP4)
+    // =========================================================
+    let exportFps = 30;
+    let exportDuration = 5;
+    let exportQuality = 0.9;
+    let exportFormat = "webm";
+    let exportCancelled = false;
+    let exportRunning = false;
+
+    const exportModal = document.getElementById("exportModal");
+    const exportBtn = document.getElementById("exportBtn");
+    const exportCloseBtn = document.getElementById("exportCloseBtn");
+    const exportStartBtn = document.getElementById("exportStartBtn");
+    const exportStartLabel = document.getElementById("exportStartLabel");
+    const exportCancelBtn = document.getElementById("exportCancelBtn");
+    const exportProgressWrap = document.getElementById("exportProgressWrap");
+    const exportProgressFill = document.getElementById("exportProgressFill");
+    const exportProgressLabel = document.getElementById("exportProgressLabel");
+    const exportProgressPct = document.getElementById("exportProgressPct");
+    const exportFormatDesc = document.getElementById("exportFormatDesc");
+    const mp4Note = document.getElementById("mp4Note");
+    const durationSlider = document.getElementById("durationSlider");
+
+    function openExportModal() {
+        if (exportRunning) return;
+        exportModal.classList.add("show");
+    }
+    function closeExportModal() {
+        if (exportRunning) return;
+        exportModal.classList.remove("show");
+    }
+
+    exportBtn.addEventListener("click", openExportModal);
+    exportCloseBtn.addEventListener("click", closeExportModal);
+    exportModal.addEventListener("click", (e) => {
+        if (e.target === exportModal) closeExportModal();
+    });
+
+    document.getElementById("formatSeg").querySelectorAll(".seg-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            document.getElementById("formatSeg").querySelectorAll(".seg-btn").forEach(b => b.classList.remove("active"));
+            e.currentTarget.classList.add("active");
+            exportFormat = e.currentTarget.getAttribute("data-format");
+            exportFormatDesc.innerText = "." + exportFormat;
+            exportStartLabel.innerText = "Render " + exportFormat.toUpperCase();
+            mp4Note.style.display = exportFormat === "mp4" ? "block" : "none";
+        });
+    });
+
+    document.getElementById("fpsSeg").querySelectorAll(".seg-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            document.getElementById("fpsSeg").querySelectorAll(".seg-btn").forEach(b => b.classList.remove("active"));
+            e.currentTarget.classList.add("active");
+            exportFps = parseInt(e.currentTarget.getAttribute("data-fps"));
+        });
+    });
+
+    document.getElementById("qualitySeg").querySelectorAll(".seg-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            document.getElementById("qualitySeg").querySelectorAll(".seg-btn").forEach(b => b.classList.remove("active"));
+            e.currentTarget.classList.add("active");
+            exportQuality = parseFloat(e.currentTarget.getAttribute("data-q"));
+        });
+    });
+
+    attachSliderEvents(durationSlider, (val) => {
+        exportDuration = Math.round(val * 10) / 10;
+        document.getElementById("exportDurationVal").innerText = exportDuration.toFixed(1) + " s";
+    });
+
+    function pickMimeType(format) {
+        const webmCandidates = [
+            "video/webm;codecs=vp9",
+            "video/webm;codecs=vp8",
+            "video/webm"
+        ];
+        const mp4Candidates = [
+            "video/mp4;codecs=avc1.42E01E",
+            "video/mp4;codecs=h264",
+            "video/mp4"
+        ];
+        const candidates = format === "mp4" ? mp4Candidates : webmCandidates;
+        for (const type of candidates) {
+            if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(type)) {
+                return type;
+            }
+        }
+        return null; // no supported mime for this format
+    }
+
+    async function renderVideoExport() {
+        if (exportRunning) return;
+        if (!window.MediaRecorder || !canvas.captureStream) {
+            showToast("Video export is not supported in this browser");
+            return;
+        }
+
+        const format = exportFormat;
+        const mimeType = pickMimeType(format);
+
+        if (!mimeType) {
+            if (format === "mp4") {
+                showToast("This browser can't encode MP4 directly — try WebM instead");
+            } else {
+                showToast("WebM export is not supported in this browser");
+            }
+            return;
+        }
+
+        exportRunning = true;
+        exportCancelled = false;
+
+        const totalFrames = Math.max(1, Math.round(exportDuration * exportFps));
+        const frameIntervalMs = 1000 / exportFps;
+
+        exportStartBtn.style.display = "none";
+        exportCancelBtn.style.display = "flex";
+        exportProgressWrap.classList.add("show");
+        exportProgressFill.setAttribute("width", "0");
+        exportProgressPct.innerText = "0%";
+        exportProgressLabel.innerText = `Encoding frame 0 / ${totalFrames}`;
+
+        // Remember playback state; export drives time manually for a deterministic result
+        const wasPlaying = isPlaying;
+        const savedTime = currentTime;
+        const savedFrameCount = frameCount;
+        isPlaying = false;
+
+        const stream = canvas.captureStream(0); // manual frame pushes
+        const track = stream.getVideoTracks()[0];
+
+        const bitsPerSecond = Math.round(2_000_000 + exportQuality * 14_000_000);
+        let recorder;
+        try {
+            recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: bitsPerSecond });
+        } catch (err) {
+            exportRunning = false;
+            exportStartBtn.style.display = "flex";
+            exportCancelBtn.style.display = "none";
+            exportProgressWrap.classList.remove("show");
+            showToast(format.toUpperCase() + " encoder unavailable in this browser");
+            return;
+        }
+
+        const chunks = [];
+        recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+
+        const recordingStopped = new Promise((resolve) => {
+            recorder.onstop = resolve;
         });
 
-        document.getElementById("playPauseBtn").addEventListener("click", () => {
-            isPlaying = !isPlaying;
-            document.getElementById("playIcon").className = isPlaying ? "fa-solid fa-pause" : "fa-solid fa-play";
-        });
+        recorder.start();
 
-        document.getElementById("resetTimeBtn").addEventListener("click", () => {
-            currentTime = 0;
-            frameCount = 0;
-        });
+        currentTime = 0;
+        frameCount = 0;
 
-        document.querySelectorAll(".scaleBtn").forEach(btn => {
-            btn.addEventListener("click", (e) => {
-                document.querySelectorAll(".scaleBtn").forEach(b => {
-                    b.className = "scaleBtn px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 hover:text-amber-300";
-                });
-                e.target.className = "scaleBtn px-2 py-1 rounded bg-amber-500/20 border border-amber-500 text-amber-300 font-semibold";
-                renderScale = parseFloat(e.target.getAttribute("data-scale"));
+        for (let i = 0; i < totalFrames; i++) {
+            if (exportCancelled) break;
+
+            currentTime = i / exportFps;
+            frameCount = i;
+
+            // render exactly one frame synchronously
+            scene.render();
+
+            // push this rendered frame into the capture stream
+            if (track.requestFrame) {
+                track.requestFrame();
+            }
+
+            const pct = Math.round(((i + 1) / totalFrames) * 100);
+            exportProgressFill.setAttribute("width", (pct / 100 * 400).toFixed(1));
+            exportProgressPct.innerText = pct + "%";
+            exportProgressLabel.innerText = `Encoding frame ${i + 1} / ${totalFrames}`;
+
+            // yield to the browser so the recorder can actually capture the frame
+            await new Promise(r => setTimeout(r, Math.max(1, frameIntervalMs * 0.15)));
+        }
+
+        recorder.stop();
+        await recordingStopped;
+        track.stop();
+
+        isPlaying = wasPlaying;
+        currentTime = savedTime;
+        frameCount = savedFrameCount;
+
+        exportStartBtn.style.display = "flex";
+        exportCancelBtn.style.display = "none";
+        exportProgressWrap.classList.remove("show");
+        exportRunning = false;
+
+        if (exportCancelled) {
+            showToast("Export cancelled");
+            return;
+        }
+
+        if (chunks.length === 0) {
+            showToast("Export failed — no frames captured");
+            return;
+        }
+
+        const blobType = format === "mp4" ? "video/mp4" : "video/webm";
+        const extension = format === "mp4" ? "mp4" : "webm";
+        const blob = new Blob(chunks, { type: blobType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "bs_shader_export." + extension;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+
+        exportModal.classList.remove("show");
+        showToast(extension.toUpperCase() + " exported — " + totalFrames + " frames");
+    }
+
+    exportStartBtn.addEventListener("click", renderVideoExport);
+    exportCancelBtn.addEventListener("click", () => { exportCancelled = true; });
+
+    document.getElementById("fullscreenBtn").addEventListener("click", () => {
+        const container = document.getElementById("viewportFrameContainer");
+        if (!document.fullscreenElement) {
+            container.requestFullscreen().catch(err => console.log(err));
+        } else {
+            document.exitFullscreen();
+        }
+    });
+
+    document.getElementById("copyBtn").addEventListener("click", () => {
+        const text = editor.getValue();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text)
+                .then(() => showToast("Code copied"))
+                .catch(() => showToast("Clipboard access denied"));
+        } else {
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+            showToast("Code copied");
+        }
+    });
+
+    document.getElementById("pasteBtn").addEventListener("click", () => {
+        navigator.clipboard.readText().then(text => {
+            if (text) {
+                editor.setValue(text);
                 compileShader();
-            });
-        });
-
-        document.getElementById("toggleFrameBtn").addEventListener("click", () => {
-            const frame = document.getElementById("goldFrameSvg");
-            if (frame.style.display === "none") {
-                frame.style.display = "block";
-            } else {
-                frame.style.display = "none";
+                showToast("Code pasted");
             }
+        }).catch(() => {
+            showToast("Clipboard access denied");
         });
+    });
 
-        document.getElementById("screenshotBtn").addEventListener("click", () => {
-            engine.onEndFrameObservable.addOnce(() => {
-                const a = document.createElement("a");
-                a.href = canvas.toDataURL("image/png");
-                a.download = "shadertoy_artwork.png";
-                a.click();
-                showToast("Screenshot captured");
-            });
-        });
+    let isMouseDown = false;
+    canvas.addEventListener("mousedown", (e) => {
+        isMouseDown = true;
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = e.clientX - rect.left;
+        mouse.y = rect.height - (e.clientY - rect.top);
+        mouse.z = mouse.x;
+        mouse.w = mouse.y;
+    });
 
-        document.getElementById("fullscreenBtn").addEventListener("click", () => {
-            const container = document.getElementById("viewportFrameContainer");
-            if (!document.fullscreenElement) {
-                container.requestFullscreen().catch(err => console.log(err));
-            } else {
-                document.exitFullscreen();
-            }
-        });
+    window.addEventListener("mouseup", () => {
+        isMouseDown = false;
+        mouse.z = -Math.abs(mouse.z);
+        mouse.w = -Math.abs(mouse.w);
+    });
 
-        document.getElementById("copyBtn").addEventListener("click", () => {
-            const text = editor.getValue();
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text)
-                    .then(() => showToast("Shader code copied"))
-                    .catch(() => showToast("Clipboard access denied"));
-            } else {
-                const textarea = document.createElement("textarea");
-                textarea.value = text;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand("copy");
-                document.body.removeChild(textarea);
-                showToast("Shader code copied");
-            }
-        });
-
-        document.getElementById("pasteBtn").addEventListener("click", () => {
-            navigator.clipboard.readText().then(text => {
-                if (text) {
-                    editor.setValue(text);
-                    compileShader();
-                    showToast("Code pasted");
-                }
-            }).catch(() => {
-                showToast("Clipboard access denied");
-            });
-        });
-
-        let isMouseDown = false;
-        canvas.addEventListener("mousedown", (e) => {
-            isMouseDown = true;
+    canvas.addEventListener("mousemove", (e) => {
+        if (isMouseDown) {
             const rect = canvas.getBoundingClientRect();
             mouse.x = e.clientX - rect.left;
             mouse.y = rect.height - (e.clientY - rect.top);
-            mouse.z = mouse.x;
-            mouse.w = mouse.y;
-        });
+        }
+    });
 
-        window.addEventListener("mouseup", () => {
-            isMouseDown = false;
-            mouse.z = -Math.abs(mouse.z);
-            mouse.w = -Math.abs(mouse.w);
-        });
+    editor.on("change", () => {
+        if (!isProgrammaticChange && document.getElementById("autoCompileCheck").checked) {
+            clearTimeout(window.autoCompileTimer);
+            window.autoCompileTimer = setTimeout(() => {
+                compileShader();
+            }, 400);
+        }
+    });
 
-        canvas.addEventListener("mousemove", (e) => {
-            if (isMouseDown) {
-                const rect = canvas.getBoundingClientRect();
-                mouse.x = e.clientX - rect.left;
-                mouse.y = rect.height - (e.clientY - rect.top);
-            }
-        });
+    engine.runRenderLoop(() => {
+        const now = performance.now();
+        const delta = (now - lastTime) / 1000;
+        lastTime = now;
 
-        editor.on("change", () => {
-            if (!isProgrammaticChange && document.getElementById("autoCompileCheck").checked) {
-                clearTimeout(window.autoCompileTimer);
-                window.autoCompileTimer = setTimeout(() => {
-                    compileShader();
-                }, 400);
-            }
-        });
+        if (isPlaying) {
+            currentTime += delta;
+            frameCount++;
+        }
 
-        engine.runRenderLoop(() => {
-            const now = performance.now();
-            const delta = (now - lastTime) / 1000;
-            lastTime = now;
+        document.getElementById("fpsVal").innerText = Math.round(engine.getFps());
+        document.getElementById("timeVal").innerText = currentTime.toFixed(2) + "s";
+        document.getElementById("resVal").innerText = canvas.width + "×" + canvas.height;
+        document.getElementById("uRes").innerText = `${canvas.width}, ${canvas.height}, 1`;
+        document.getElementById("uMouse").innerText = `${Math.round(mouse.x)}, ${Math.round(mouse.y)}, ${Math.round(mouse.z)}, ${Math.round(mouse.w)}`;
+        document.getElementById("uFrame").innerText = frameCount;
 
-            if (isPlaying) {
-                currentTime += delta;
-                frameCount++;
-            }
+        scene.render();
+    });
 
-            document.getElementById("fpsVal").innerText = Math.round(engine.getFps());
-            document.getElementById("timeVal").innerText = currentTime.toFixed(2) + "s";
-            document.getElementById("resVal").innerText = canvas.width + "x" + canvas.height;
-            document.getElementById("uRes").innerText = `${canvas.width}, ${canvas.height}, 1`;
-            document.getElementById("uMouse").innerText = `${Math.round(mouse.x)}, ${Math.round(mouse.y)}, ${Math.round(mouse.z)}, ${Math.round(mouse.w)}`;
-            document.getElementById("uFrame").innerText = frameCount;
+    window.addEventListener("resize", () => {
+        engine.resize();
+    });
 
-            scene.render();
-        });
-
-        window.addEventListener("resize", () => {
-            engine.resize();
-        });
-
-        window.onload = () => {
-            compileShader();
-        };
-    </script>
+    window.onload = () => {
+        compileShader();
+    };
+    if (document.readyState === "complete") {
+        compileShader();
+    }
+</script>
 </body>
 </html>

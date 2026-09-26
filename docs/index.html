@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Babylon.js Shadertoy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/clike/clike.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f17;
+            color: #e2e8f0;
+            overflow: hidden;
+        }
+        .font-mono-code {
+            font-family: 'Fira Code', monospace;
+        }
+        .CodeMirror {
+            height: 100% !important;
+            font-family: 'Fira Code', monospace !important;
+            font-size: 13px !important;
+            background-color: #0d1117 !important;
+        }
+        .CodeMirror-gutters {
+            background-color: #161b22 !important;
+            border-right: 1px solid #21262d !important;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d1117;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #21262d;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #30363d;
+        }
+        .gold-gradient-text {
+            background: linear-gradient(135deg, #fff2a3 0%, #d4af37 50%, #aa7c11 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .gold-border {
+            border-color: #d4af37;
+        }
+        .custom-range {
+            accent-color: #d4af37;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col bg-slate-950 text-slate-100 select-none">
+
+    <header class="h-14 bg-slate-900/90 border-b border-slate-800 px-4 flex items-center justify-between z-20 backdrop-blur-md">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-300 via-amber-500 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                <i class="fa-solid fa-cube text-slate-950 text-base"></i>
+            </div>
+            <div>
+                <h1 class="text-base font-bold gold-gradient-text tracking-wide">BABYLON.JS SHADERTOY</h1>
+                <p class="text-[10px] text-slate-400 font-medium">Realtime GLSL Canvas Environment</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-6 text-xs">
+            <div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-800">
+                <span class="text-slate-400">FPS:</span>
+                <span id="fpsVal" class="font-mono text-emerald-400 font-semibold">60</span>
+            </div>
+            <div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-800">
+                <span class="text-slate-400">Time:</span>
+                <span id="timeVal" class="font-mono text-amber-400 font-semibold">0.00s</span>
+            </div>
+            <div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-800">
+                <span class="text-slate-400">Res:</span>
+                <span id="resVal" class="font-mono text-indigo-400 font-semibold">800x450</span>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <label class="text-xs text-slate-400 mr-1">Preset:</label>
+            <select id="presetSelect" class="bg-slate-800 text-xs border border-slate-700 text-amber-200 rounded-md px-2.5 py-1.5 focus:outline-none focus:border-amber-500">
+                <option value="default">Default Shader</option>
+                <option value="warp">Warp Speed</option>
+                <option value="calm">Calm Ambient</option>
+            </select>
+        </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden relative">
+
+        <aside class="w-80 bg-slate-900/60 border-r border-slate-800 flex flex-col z-10 backdrop-blur-sm">
+            <div class="p-3 border-b border-slate-800 flex items-center justify-between bg-slate-900/80">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-sliders text-amber-400 text-sm"></i>
+                    <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-200">Inspector</h2>
+                </div>
+                <button id="resetParamsBtn" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded border border-slate-700 transition">
+                    Reset
+                </button>
+            </div>
+
+            <div class="p-2 border-b border-slate-800 bg-slate-950/40">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-xs text-slate-500"></i>
+                    <input type="text" id="paramSearch" placeholder="Filter parameters..." class="w-full bg-slate-900 border border-slate-800 text-xs rounded-md pl-8 pr-3 py-1.5 text-slate-200 focus:outline-none focus:border-amber-500">
+                </div>
+            </div>
+
+            <div id="inspectorContainer" class="flex-1 overflow-y-auto p-3 space-y-3">
+            </div>
+
+            <div class="p-3 border-t border-slate-800 bg-slate-950/60 text-[11px] space-y-1.5">
+                <div class="text-slate-400 font-semibold mb-1 flex items-center justify-between">
+                    <span>UNIFORMS MONITOR</span>
+                    <i class="fa-solid fa-microchip text-slate-500"></i>
+                </div>
+                <div class="flex justify-between font-mono text-slate-300">
+                    <span class="text-slate-500">iResolution:</span>
+                    <span id="uRes">800, 450, 1</span>
+                </div>
+                <div class="flex justify-between font-mono text-slate-300">
+                    <span class="text-slate-500">iMouse:</span>
+                    <span id="uMouse">0, 0, 0, 0</span>
+                </div>
+                <div class="flex justify-between font-mono text-slate-300">
+                    <span class="text-slate-500">iFrame:</span>
+                    <span id="uFrame">0</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+            <div class="relative flex flex-col items-center justify-center max-w-full max-h-full">
+                
+                <div id="viewportFrameContainer" class="relative shadow-2xl flex items-center justify-center" style="width: 860px; height: 510px; max-width: 95vw; max-height: 70vh; aspect-ratio: 860/510;">
+                    
+                    <canvas id="renderCanvas" class="absolute bg-black rounded" style="left: 3.48837%; top: 5.88235%; width: 93.02326%; height: 88.23529%; z-index: 1;"></canvas>
+
+                    <svg id="goldFrameSvg" viewBox="0 0 860 510" class="absolute left-0 top-0 w-full h-full pointer-events-none drop-shadow-2xl" style="z-index: 2;">
+                        <defs>
+                            <linearGradient id="goldGradMain" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#bf953f" />
+                                <stop offset="25%" stop-color="#fcf6ba" />
+                                <stop offset="50%" stop-color="#b38728" />
+                                <stop offset="75%" stop-color="#fbf5b7" />
+                                <stop offset="100%" stop-color="#aa771c" />
+                            </linearGradient>
+                            <linearGradient id="goldGradHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.7" />
+                                <stop offset="50%" stop-color="#d4af37" stop-opacity="0.3" />
+                                <stop offset="100%" stop-color="#4a3000" stop-opacity="0.9" />
+                            </linearGradient>
+                            <radialGradient id="gemGrad" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="#fff0a3" />
+                                <stop offset="60%" stop-color="#c99728" />
+                                <stop offset="100%" stop-color="#422a00" />
+                            </radialGradient>
+                        </defs>
+
+                        <path fill-rule="evenodd" fill="url(#goldGradMain)" d="M0,0 H860 V510 H0 Z M30,30 H830 V480 H30 Z" />
+
+                        <rect x="0" y="0" width="860" height="510" fill="none" stroke="#3b2602" stroke-width="3" />
+                        <rect x="5" y="5" width="850" height="500" fill="none" stroke="url(#goldGradHighlight)" stroke-width="3" />
+                        <rect x="14" y="14" width="832" height="482" fill="none" stroke="#261801" stroke-width="2" />
+                        <rect x="22" y="22" width="816" height="466" fill="none" stroke="url(#goldGradMain)" stroke-width="3" />
+                        <rect x="30" y="30" width="800" height="450" fill="none" stroke="#120a00" stroke-width="4" />
+                        <rect x="31" y="31" width="798" height="448" fill="none" stroke="#ffe27a" stroke-width="1" stroke-opacity="0.4" />
+
+                        <g fill="url(#goldGradMain)" stroke="#382200" stroke-width="1">
+                            <path d="M0,0 L50,0 C32,18 32,32 30,50 L30,30 L0,0 Z" />
+                            <path d="M860,0 L810,0 C828,18 828,32 830,50 L830,30 L860,0 Z" />
+                            <path d="M0,510 L50,510 C32,492 32,478 30,460 L30,480 L0,510 Z" />
+                            <path d="M860,510 L810,510 C828,492 828,478 830,460 L830,480 L860,510 Z" />
+
+                            <circle cx="15" cy="15" r="8" fill="url(#gemGrad)" stroke="#261700" stroke-width="1.5" />
+                            <circle cx="845" cy="15" r="8" fill="url(#gemGrad)" stroke="#261700" stroke-width="1.5" />
+                            <circle cx="15" cy="495" r="8" fill="url(#gemGrad)" stroke="#261700" stroke-width="1.5" />
+                            <circle cx="845" cy="495" r="8" fill="url(#gemGrad)" stroke="#261700" stroke-width="1.5" />
+
+                            <path d="M430,3 L445,15 L430,27 L415,15 Z" fill="url(#gemGrad)" />
+                            <path d="M430,483 L445,495 L430,507 L415,495 Z" fill="url(#gemGrad)" />
+                            <path d="M3,255 L15,267 L27,255 L15,243 Z" fill="url(#gemGrad)" />
+                            <path d="M833,255 L845,267 L857,255 L845,243 Z" fill="url(#gemGrad)" />
+                        </g>
+                    </svg>
+                </div>
+
+                <div class="mt-4 flex items-center justify-between w-full max-w-[860px] bg-slate-900/90 border border-slate-800 rounded-xl px-4 py-2 text-xs shadow-xl backdrop-blur-md">
+                    <div class="flex items-center space-x-2">
+                        <button id="playPauseBtn" class="w-8 h-8 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold flex items-center justify-center transition shadow-md shadow-amber-500/20">
+                            <i id="playIcon" class="fa-solid fa-pause"></i>
+                        </button>
+                        <button id="resetTimeBtn" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center border border-slate-700 transition">
+                            <i class="fa-solid fa-rotate-left"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <label class="text-slate-400">Scale:</label>
+                        <button class="scaleBtn px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 hover:text-amber-300" data-scale="0.5">0.5x</button>
+                        <button class="scaleBtn px-2 py-1 rounded bg-amber-500/20 border border-amber-500 text-amber-300 font-semibold" data-scale="1.0">1.0x</button>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <button id="toggleFrameBtn" class="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
+                            <i class="fa-solid fa-border-top-left"></i>
+                            <span>Frame</span>
+                        </button>
+                        <button id="screenshotBtn" class="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
+                            <i class="fa-solid fa-camera"></i>
+                            <span>Snap</span>
+                        </button>
+                        <button id="fullscreenBtn" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center border border-slate-700 transition">
+                            <i class="fa-solid fa-expand"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <aside class="w-[480px] bg-slate-900/80 border-l border-slate-800 flex flex-col z-10 backdrop-blur-sm">
+            <div class="p-3 border-b border-slate-800 flex items-center justify-between bg-slate-900">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-code text-amber-400 text-sm"></i>
+                    <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-200">GLSL Editor</h2>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <button id="compileBtn" class="px-3 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center space-x-1 shadow-md shadow-emerald-600/20 transition">
+                        <i class="fa-solid fa-play text-[10px]"></i>
+                        <span>Compile</span>
+                    </button>
+                    <label class="flex items-center space-x-1.5 text-[11px] text-slate-400 cursor-pointer ml-2">
+                        <input type="checkbox" id="autoCompileCheck" checked class="rounded border-slate-700 bg-slate-800 text-amber-500 focus:ring-0">
+                        <span>Auto</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="px-3 py-1.5 border-b border-slate-800 bg-slate-950 flex items-center justify-between text-xs">
+                <div class="flex items-center space-x-2">
+                    <button id="copyBtn" class="text-slate-400 hover:text-amber-300 transition px-2 py-1 rounded bg-slate-900 border border-slate-800 flex items-center space-x-1">
+                        <i class="fa-regular fa-copy"></i>
+                        <span>Copy</span>
+                    </button>
+                    <button id="pasteBtn" class="text-slate-400 hover:text-amber-300 transition px-2 py-1 rounded bg-slate-900 border border-slate-800 flex items-center space-x-1">
+                        <i class="fa-regular fa-paste"></i>
+                        <span>Paste</span>
+                    </button>
+                </div>
+                <div id="compileStatus" class="text-[11px] font-mono text-emerald-400 flex items-center space-x-1">
+                    <i class="fa-solid fa-check-circle"></i>
+                    <span>Ready</span>
+                </div>
+            </div>
+
+            <div class="flex-1 relative overflow-hidden">
+                <textarea id="codeEditor"></textarea>
+            </div>
+
+            <div id="errorConsole" class="h-24 border-t border-slate-800 bg-slate-950 p-2 overflow-y-auto font-mono text-xs text-rose-400 hidden">
+                <div class="flex items-center space-x-1 text-rose-500 font-bold mb-1">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>Compiler Error</span>
+                </div>
+                <pre id="errorText" class="whitespace-pre-wrap text-[11px] leading-relaxed"></pre>
+            </div>
+        </aside>
+
+    </div>
+
+    <footer class="h-8 shrink-0 bg-slate-900/90 border-t border-slate-800 px-4 flex items-center justify-between text-[11px] text-slate-500 z-20 backdrop-blur-md">
+        <span class="tracking-wide">BABYLON.JS SHADERTOY &middot; Realtime GLSL Canvas Environment</span>
+        <span class="flex items-center space-x-1.5">
+            <i class="fa-solid fa-code text-slate-600"></i>
+            <span>WebGL &bull; Babylon.js &bull; CodeMirror</span>
+        </span>
+    </footer>
+
+    <div id="toast" class="fixed bottom-6 right-6 bg-amber-500 text-slate-950 font-bold px-4 py-2 rounded-lg shadow-xl text-xs flex items-center space-x-2 transition-all duration-300 transform translate-y-12 opacity-0 z-50">
+        <i class="fa-solid fa-circle-info"></i>
+        <span id="toastMsg">Notification</span>
+    </div>
+
+    <script>
+        const DEFAULT_SHADER = `#define DISTORSION_LENTILLE_MIN 0.5
+#define DISTORSION_LENTILLE_AMP 0.4
+#define DISTORSION_LENTILLE_FREQ 1.5
+
+#define CAMERA_RAYON_BASE 3.5
+#define CAMERA_RAYON_AMP 0.5
+#define CAMERA_RAYON_FREQ 0.4
+
+#define CAMERA_AZIMUT_FREQ 0.3
+
+#define CAMERA_ELEVATION_AMP 0.6
+#define CAMERA_ELEVATION_FREQ 0.25
+
+#define VISEE_OSCILLATION_X_AMP 0.3
+#define VISEE_OSCILLATION_X_FREQ 0.5
+#define VISEE_OSCILLATION_Y_AMP 0.3
+#define VISEE_OSCILLATION_Y_FREQ 0.4
+
+#define PLAN_FOCAL_DISTANCE 1.2
+
+#define SYM_SECTEUR_ANGLE 0.785398
+#define SYM_SECTEUR_DEMI_ANGLE 0.392699
+
+#define FRACTAL_FREQ_DEPART 1.0
+#define FRACTAL_FREQ_LIMITE 9.0
+#define FRACTAL_FREQ_DIVISEUR 0.8
+
+#define PAS_BASE 0.002
+#define PAS_RAYON_CIBLE 0.5
+#define PAS_DIVISEUR_ECHELLE 40.0
+
+#define SHADER_AMPLITUDE_LUMIERE 350.0
+#define SHADER_TAILLE_BOITE_LOG 8.0
+#define SHADER_GAMMA 1.4
+
+void mainImage(out vec4 couleurPixel, in vec2 coordonneePixel) {
+    vec2 resolution = iResolution.xy;
+    float temps = iTime;
+    couleurPixel = vec4(0.0);
+    
+    vec2 positionNormalisee = (coordonneePixel + coordonneePixel - resolution) / resolution.y;
+    float rayonCamera = CAMERA_RAYON_BASE + CAMERA_RAYON_AMP * sin(temps * CAMERA_RAYON_FREQ);
+    float angleAzimut = temps * CAMERA_AZIMUT_FREQ;
+    float angleElevation = sin(temps * CAMERA_ELEVATION_FREQ) * CAMERA_ELEVATION_AMP;
+    float bruitAleatoire = fract(dot(coordonneePixel, sin(coordonneePixel)));
+    float distancePas;
+    
+    positionNormalisee *= 1. + dot(positionNormalisee, positionNormalisee) * (DISTORSION_LENTILLE_MIN + DISTORSION_LENTILLE_AMP * sin(temps * DISTORSION_LENTILLE_FREQ));
+    
+    vec3 origineRayon = vec3(sin(angleAzimut) * cos(angleElevation), sin(angleElevation), cos(angleAzimut) * cos(angleElevation)) * rayonCamera;
+    vec3 directionVisee = normalize(vec3(sin(temps * VISEE_OSCILLATION_X_FREQ) * VISEE_OSCILLATION_X_AMP, cos(temps * VISEE_OSCILLATION_Y_FREQ) * VISEE_OSCILLATION_Y_AMP, 0) - origineRayon);
+    vec3 axeHorizontal = normalize(cross(directionVisee, vec3(0, 1, 0)));
+    vec3 directionRayon = normalize(positionNormalisee.x * axeHorizontal + positionNormalisee.y * cross(axeHorizontal, directionVisee) + PLAN_FOCAL_DISTANCE * directionVisee);
+    
+    for(float etape = 0.; etape < 100.; etape++) {
+        vec3 positionEspace = origineRayon + bruitAleatoire * directionRayon;
+        positionEspace.z -= 4.;
+        
+        angleAzimut = abs(mod(atan(positionEspace.y, positionEspace.x), SYM_SECTEUR_ANGLE) - SYM_SECTEUR_DEMI_ANGLE);
+        positionEspace.xy = length(positionEspace.xy) * vec2(cos(angleAzimut), sin(angleAzimut));
+        positionEspace.xy = vec2(log(length(positionEspace.xy) + 1e-3), cos(atan(positionEspace.y, positionEspace.x) * 2.));
+        
+        for(float frequence = FRACTAL_FREQ_DEPART; frequence < FRACTAL_FREQ_LIMITE; frequence /= FRACTAL_FREQ_DIVISEUR) {
+            positionEspace += cos(ceil(positionEspace.yzx * frequence - temps)) / frequence;
+        }
+        
+        distancePas = PAS_BASE + abs(length(positionEspace) - PAS_RAYON_CIBLE) / PAS_DIVISEUR_ECHELLE;
+        couleurPixel += (sin(bruitAleatoire - temps + vec4(6, 2, 4, 0)) + .5) / (distancePas * SHADER_AMPLITUDE_LUMIERE);
+        bruitAleatoire += distancePas;
+    }
+    
+    couleurPixel = pow(tanh(couleurPixel / SHADER_TAILLE_BOITE_LOG), vec4(SHADER_GAMMA));
+}`;
+
+        const WARP_SHADER = `#define VITESSE_TUNNEL 1.5
+#define NOMBRE_COUCHES 3.0
+#define DENSITE_ETOILES 80.0
+#define LONGUEUR_TRAINEE 0.35
+#define COULEUR_INTENSITE 1.2
+
+void mainImage(out vec4 couleurPixel, in vec2 coordonneePixel) {
+    vec2 resolution = iResolution.xy;
+    vec2 uv = (coordonneePixel - 0.5 * resolution) / resolution.y;
+    float angle = atan(uv.y, uv.x);
+    float rayon = length(uv);
+
+    vec3 couleur = vec3(0.0);
+
+    for (float couche = 0.0; couche < NOMBRE_COUCHES; couche++) {
+        float decalageTemps = iTime * VITESSE_TUNNEL * (1.0 + couche * 0.4);
+        float profondeur = fract(rayon * DENSITE_ETOILES - decalageTemps + couche * 17.13);
+        float trainee = smoothstep(0.0, LONGUEUR_TRAINEE, profondeur) * smoothstep(1.0, 1.0 - LONGUEUR_TRAINEE, profondeur);
+        float eclat = trainee * (1.0 / (rayon + 0.05)) * COULEUR_INTENSITE;
+        vec3 teinte = 0.5 + 0.5 * cos(angle * 3.0 + couche * 2.0 + vec3(0.0, 2.0, 4.0));
+        couleur += eclat * teinte * 0.15;
+    }
+
+    couleur = pow(couleur, vec3(0.8));
+    couleurPixel = vec4(couleur, 1.0);
+}`;
+
+        const CALM_SHADER = `#define VITESSE_DERIVE 0.08
+#define ECHELLE_MOTIF 2.5
+#define NOMBRE_OCTAVES 4.0
+
+float bruitDouceur(vec2 p) {
+    return sin(p.x) * sin(p.y);
+}
+
+void mainImage(out vec4 couleurPixel, in vec2 coordonneePixel) {
+    vec2 resolution = iResolution.xy;
+    vec2 uv = (coordonneePixel - 0.5 * resolution) / resolution.y;
+
+    vec3 teinteBase = vec3(0.05, 0.12, 0.22);
+    vec3 teinteLueur = vec3(0.3, 0.55, 0.7);
+
+    float temps = iTime * VITESSE_DERIVE;
+    float motif = 0.0;
+    float amplitude = 0.5;
+    vec2 position = uv * ECHELLE_MOTIF;
+
+    for (float octave = 0.0; octave < NOMBRE_OCTAVES; octave++) {
+        motif += amplitude * bruitDouceur(position + temps * (1.0 + octave * 0.3));
+        position *= 1.7;
+        amplitude *= 0.55;
+    }
+
+    motif = motif * 0.5 + 0.5;
+    vec3 couleur = mix(teinteBase, teinteLueur, motif);
+    couleur += 0.03 * sin(temps * 2.0 + uv.x * 4.0);
+
+    couleurPixel = vec4(couleur, 1.0);
+}`;
+
+        const SHADER_PRESETS = { default: DEFAULT_SHADER, warp: WARP_SHADER, calm: CALM_SHADER };
+
+        let canvas = document.getElementById("renderCanvas");
+        let engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
+        let scene = new BABYLON.Scene(engine);
+        let camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0, 0, -1), scene);
+        
+        let postProcess = null;
+        let isPlaying = true;
+        let currentTime = 0;
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let mouse = { x: 0, y: 0, z: 0, w: 0 };
+        let renderScale = 1.0;
+        let isProgrammaticChange = false;
+        let currentParameters = [];
+
+        let editor = CodeMirror.fromTextArea(document.getElementById("codeEditor"), {
+            mode: "x-shader/x-fragment",
+            theme: "dracula",
+            lineNumbers: true,
+            matchBrackets: true,
+            indentUnit: 4,
+            tabSize: 4,
+            lineWrapping: true
+        });
+
+        editor.setValue(DEFAULT_SHADER);
+
+        function showToast(msg) {
+            const toast = document.getElementById("toast");
+            document.getElementById("toastMsg").innerText = msg;
+            toast.classList.remove("translate-y-12", "opacity-0");
+            setTimeout(() => {
+                toast.classList.add("translate-y-12", "opacity-0");
+            }, 2500);
+        }
+
+        function buildShaderCode(userCode) {
+            return `
+precision highp float;
+uniform vec3 iResolution;
+uniform float iTime;
+uniform float iTimeDelta;
+uniform vec4 iMouse;
+uniform int iFrame;
+
+` + userCode + `
+
+void main(void) {
+    mainImage(gl_FragColor, gl_FragCoord.xy);
+}
+`;
+        }
+
+        function compileShader() {
+            const code = editor.getValue();
+            const fullCode = buildShaderCode(code);
+            
+            BABYLON.Effect.ShadersStore["customFragmentShader"] = fullCode;
+
+            if (postProcess) {
+                postProcess.dispose();
+                postProcess = null;
+            }
+
+            try {
+                postProcess = new BABYLON.PostProcess(
+                    "ShadertoyPostProcess_" + Date.now(),
+                    "custom",
+                    ["iResolution", "iTime", "iTimeDelta", "iMouse", "iFrame"],
+                    null,
+                    renderScale,
+                    camera,
+                    BABYLON.Texture.BILINEAR_SAMPLINGMODE,
+                    engine,
+                    false
+                );
+
+                postProcess.onEffectCreatedObservable.add((effect) => {
+                    effect.onCompiled = () => {
+                        document.getElementById("compileStatus").className = "text-[11px] font-mono text-emerald-400 flex items-center space-x-1";
+                        document.getElementById("compileStatus").innerHTML = '<i class="fa-solid fa-check-circle"></i><span>Compiled</span>';
+                        document.getElementById("errorConsole").classList.add("hidden");
+                    };
+                    effect.onError = (eff, err) => {
+                        document.getElementById("compileStatus").className = "text-[11px] font-mono text-rose-400 flex items-center space-x-1";
+                        document.getElementById("compileStatus").innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i><span>Error</span>';
+                        document.getElementById("errorConsole").classList.remove("hidden");
+                        document.getElementById("errorText").innerText = err;
+                    };
+                });
+
+                let lastFrameTime = performance.now();
+                postProcess.onApply = (effect) => {
+                    const now = performance.now();
+                    const delta = (now - lastFrameTime) / 1000;
+                    lastFrameTime = now;
+
+                    effect.setFloat3("iResolution", canvas.width, canvas.height, 1.0);
+                    effect.setFloat("iTime", currentTime);
+                    effect.setFloat("iTimeDelta", delta);
+                    effect.setVector4("iMouse", new BABYLON.Vector4(mouse.x, mouse.y, mouse.z, mouse.w));
+                    effect.setInt("iFrame", frameCount);
+                };
+
+            } catch (err) {
+                document.getElementById("errorConsole").classList.remove("hidden");
+                document.getElementById("errorText").innerText = err.message || err;
+            }
+
+            if (!isProgrammaticChange) {
+                parseAndPopulateInspector();
+            }
+        }
+
+        function parseAndPopulateInspector() {
+            const code = editor.getValue();
+            const container = document.getElementById("inspectorContainer");
+            const filter = document.getElementById("paramSearch").value.toLowerCase();
+            
+            const params = [];
+            const defineRegex = /#define\s+([A-Za-z_][A-Za-z0-9_]*)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)/g;
+            let match;
+
+            while ((match = defineRegex.exec(code)) !== null) {
+                const name = match[1];
+                const val = parseFloat(match[2]);
+                if (!isNaN(val) && name !== "mainImage") {
+                    params.push({ name, value: val, raw: match[2] });
+                }
+            }
+
+            currentParameters = params;
+            container.innerHTML = "";
+
+            params.forEach(param => {
+                if (filter && !param.name.toLowerCase().includes(filter)) return;
+
+                const card = document.createElement("div");
+                card.className = "bg-slate-950/80 border border-slate-800 rounded-lg p-2.5 space-y-1.5 hover:border-slate-700 transition";
+
+                let min = 0;
+                let max = param.value * 2.5;
+                if (param.value < 0) {
+                    min = param.value * 3;
+                    max = Math.abs(param.value);
+                } else if (param.value === 0) {
+                    min = -1.0;
+                    max = 1.0;
+                }
+                if (min === max) {
+                    min = 0;
+                    max = 10;
+                }
+
+                let step = 0.01;
+                if (Math.abs(param.value) < 0.01 && param.value !== 0) step = 0.0001;
+                else if (Math.abs(param.value) > 50) step = 1.0;
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-mono font-medium text-amber-200 truncate pr-2" title="${param.name}">${param.name}</span>
+                        <input type="number" step="${step}" value="${param.value}" class="param-num-input w-20 bg-slate-900 border border-slate-800 text-xs text-right font-mono text-emerald-400 rounded px-1.5 py-0.5 focus:outline-none focus:border-amber-500" data-name="${param.name}">
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <input type="range" min="${min}" max="${max}" step="${step}" value="${param.value}" class="param-slider custom-range flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer" data-name="${param.name}">
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+
+            document.querySelectorAll(".param-slider").forEach(slider => {
+                slider.addEventListener("input", (e) => {
+                    const name = e.target.getAttribute("data-name");
+                    const val = parseFloat(e.target.value);
+                    const numInput = e.target.closest("div").previousElementSibling.querySelector(".param-num-input");
+                    if (numInput) numInput.value = val;
+                    updateCodeParameter(name, val);
+                });
+            });
+
+            document.querySelectorAll(".param-num-input").forEach(input => {
+                input.addEventListener("change", (e) => {
+                    const name = e.target.getAttribute("data-name");
+                    const val = parseFloat(e.target.value);
+                    const slider = e.target.closest("div").nextElementSibling.querySelector(".param-slider");
+                    if (slider) slider.value = val;
+                    updateCodeParameter(name, val);
+                });
+            });
+        }
+
+        function updateCodeParameter(paramName, newValue) {
+            const code = editor.getValue();
+            const pattern = new RegExp('(#define\\s+' + paramName + '\\s+)[-+]?\\d*\\.?\\d+(?:[eE][-+]?\\d+)?');
+            
+            if (pattern.test(code)) {
+                let formatted = newValue.toString();
+                if (!formatted.includes('.') && !formatted.includes('e')) {
+                    formatted += '.0';
+                }
+                
+                isProgrammaticChange = true;
+                const cursor = editor.getCursor();
+                const scroll = editor.getScrollInfo();
+                
+                const updatedCode = code.replace(pattern, '$1' + formatted);
+                editor.setValue(updatedCode);
+                
+                editor.setCursor(cursor);
+                editor.scrollTo(scroll.left, scroll.top);
+                isProgrammaticChange = false;
+
+                if (document.getElementById("autoCompileCheck").checked) {
+                    compileShader();
+                }
+            }
+        }
+
+        document.getElementById("compileBtn").addEventListener("click", () => {
+            compileShader();
+            showToast("Shader recompiled");
+        });
+
+        document.getElementById("paramSearch").addEventListener("input", parseAndPopulateInspector);
+
+        document.getElementById("presetSelect").addEventListener("change", (e) => {
+            const preset = SHADER_PRESETS[e.target.value];
+            if (preset) {
+                editor.setValue(preset);
+                compileShader();
+                showToast("Preset loaded: " + e.target.options[e.target.selectedIndex].text);
+            }
+        });
+
+        document.getElementById("resetParamsBtn").addEventListener("click", () => {
+            editor.setValue(DEFAULT_SHADER);
+            compileShader();
+            showToast("Parameters reset");
+        });
+
+        document.getElementById("playPauseBtn").addEventListener("click", () => {
+            isPlaying = !isPlaying;
+            document.getElementById("playIcon").className = isPlaying ? "fa-solid fa-pause" : "fa-solid fa-play";
+        });
+
+        document.getElementById("resetTimeBtn").addEventListener("click", () => {
+            currentTime = 0;
+            frameCount = 0;
+        });
+
+        document.querySelectorAll(".scaleBtn").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                document.querySelectorAll(".scaleBtn").forEach(b => {
+                    b.className = "scaleBtn px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 hover:text-amber-300";
+                });
+                e.target.className = "scaleBtn px-2 py-1 rounded bg-amber-500/20 border border-amber-500 text-amber-300 font-semibold";
+                renderScale = parseFloat(e.target.getAttribute("data-scale"));
+                compileShader();
+            });
+        });
+
+        document.getElementById("toggleFrameBtn").addEventListener("click", () => {
+            const frame = document.getElementById("goldFrameSvg");
+            if (frame.style.display === "none") {
+                frame.style.display = "block";
+            } else {
+                frame.style.display = "none";
+            }
+        });
+
+        document.getElementById("screenshotBtn").addEventListener("click", () => {
+            engine.onEndFrameObservable.addOnce(() => {
+                const a = document.createElement("a");
+                a.href = canvas.toDataURL("image/png");
+                a.download = "shadertoy_artwork.png";
+                a.click();
+                showToast("Screenshot captured");
+            });
+        });
+
+        document.getElementById("fullscreenBtn").addEventListener("click", () => {
+            const container = document.getElementById("viewportFrameContainer");
+            if (!document.fullscreenElement) {
+                container.requestFullscreen().catch(err => console.log(err));
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        document.getElementById("copyBtn").addEventListener("click", () => {
+            const text = editor.getValue();
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text)
+                    .then(() => showToast("Shader code copied"))
+                    .catch(() => showToast("Clipboard access denied"));
+            } else {
+                const textarea = document.createElement("textarea");
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand("copy");
+                document.body.removeChild(textarea);
+                showToast("Shader code copied");
+            }
+        });
+
+        document.getElementById("pasteBtn").addEventListener("click", () => {
+            navigator.clipboard.readText().then(text => {
+                if (text) {
+                    editor.setValue(text);
+                    compileShader();
+                    showToast("Code pasted");
+                }
+            }).catch(() => {
+                showToast("Clipboard access denied");
+            });
+        });
+
+        let isMouseDown = false;
+        canvas.addEventListener("mousedown", (e) => {
+            isMouseDown = true;
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = rect.height - (e.clientY - rect.top);
+            mouse.z = mouse.x;
+            mouse.w = mouse.y;
+        });
+
+        window.addEventListener("mouseup", () => {
+            isMouseDown = false;
+            mouse.z = -Math.abs(mouse.z);
+            mouse.w = -Math.abs(mouse.w);
+        });
+
+        canvas.addEventListener("mousemove", (e) => {
+            if (isMouseDown) {
+                const rect = canvas.getBoundingClientRect();
+                mouse.x = e.clientX - rect.left;
+                mouse.y = rect.height - (e.clientY - rect.top);
+            }
+        });
+
+        editor.on("change", () => {
+            if (!isProgrammaticChange && document.getElementById("autoCompileCheck").checked) {
+                clearTimeout(window.autoCompileTimer);
+                window.autoCompileTimer = setTimeout(() => {
+                    compileShader();
+                }, 400);
+            }
+        });
+
+        engine.runRenderLoop(() => {
+            const now = performance.now();
+            const delta = (now - lastTime) / 1000;
+            lastTime = now;
+
+            if (isPlaying) {
+                currentTime += delta;
+                frameCount++;
+            }
+
+            document.getElementById("fpsVal").innerText = Math.round(engine.getFps());
+            document.getElementById("timeVal").innerText = currentTime.toFixed(2) + "s";
+            document.getElementById("resVal").innerText = canvas.width + "x" + canvas.height;
+            document.getElementById("uRes").innerText = `${canvas.width}, ${canvas.height}, 1`;
+            document.getElementById("uMouse").innerText = `${Math.round(mouse.x)}, ${Math.round(mouse.y)}, ${Math.round(mouse.z)}, ${Math.round(mouse.w)}`;
+            document.getElementById("uFrame").innerText = frameCount;
+
+            scene.render();
+        });
+
+        window.addEventListener("resize", () => {
+            engine.resize();
+        });
+
+        window.onload = () => {
+            compileShader();
+        };
+    </script>
+</body>
+</html>

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BS — Shader Studio</title>
-<script src="https://cdn.babylonjs.com/babylon.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
@@ -109,10 +109,10 @@
   /* ---- Body split ---- */
   .body-split{ flex:1 1 auto; display:flex; min-height:0; position:relative; }
 
-  /* ---- Inspector panel (now docked under the viewport) ---- */
+  /* ---- Inspector panel (sliders, shown above the viewport) ---- */
   .inspector{
     width:100%; flex:1 1 auto; min-height:0; background:var(--charcoal); border-top:1px solid var(--line);
-    display:flex; flex-direction:column; margin-top:18px;
+    display:flex; flex-direction:column;
     border-radius:8px; border:1px solid var(--line); overflow:hidden;
   }
   .inspector-head{
@@ -173,21 +173,6 @@
   .uniform-row .k{ color:var(--ink-faint); }
   .uniform-row .v{ color:#a8adb8; white-space:nowrap; }
 
-  /* ---- Viewport-window status bar ---- */
-  .viewport-notice{
-    width:100%; max-width:860px; display:flex; align-items:center; justify-content:space-between;
-    background:linear-gradient(180deg,#14171c,#101318); border:1px solid var(--line); border-radius:8px;
-    padding:12px 16px; gap:14px;
-  }
-  .viewport-notice-left{ display:flex; align-items:center; gap:10px; }
-  .viewport-dot{
-    width:9px; height:9px; border-radius:50%; background:var(--ink-faint); flex:0 0 auto;
-    box-shadow:0 0 0 3px rgba(255,255,255,.04); transition:background .2s;
-  }
-  .viewport-dot.live{ background:var(--patina); box-shadow:0 0 0 3px rgba(95,174,148,.18); }
-  .viewport-dot.blocked{ background:var(--ember); box-shadow:0 0 0 3px rgba(217,105,74,.18); }
-  #viewportStatusLabel{ font-size:12px; color:var(--ink-dim); }
-
   /* ---- Center stage ---- */
   .stage{
     flex:1 1 auto; display:flex; flex-direction:column; align-items:center;
@@ -204,7 +189,8 @@
     background-size:34px 34px;
     mask-image: radial-gradient(ellipse 60% 50% at 50% 45%, black 0%, transparent 75%);
   }
-  .stage > #viewportFrameContainer, .stage > .transport, .stage > .inspector{ position:relative; z-index:1; }
+  .stage > #viewportRoot, .stage > .inspector, #viewportRoot #viewportFrameContainer, #viewportRoot .transport{ position:relative; z-index:1; }
+  #viewportRoot{ width:100%; display:flex; flex-direction:column; align-items:center; }
 
   #viewportFrameContainer{ position:relative; z-index:1; }
   #renderCanvas{ background:#000; }
@@ -425,20 +411,40 @@
     <!-- ---------- STAGE ---------- -->
     <main class="stage">
 
-      <!-- ---------- VIEWPORT WINDOW STATUS ---------- -->
-      <div class="viewport-notice">
-        <div class="viewport-notice-left">
-          <span id="viewportStatusDot" class="viewport-dot"></span>
-          <span id="viewportStatusLabel">Ouverture de la fenêtre viewport…</span>
+      <!-- ---------- INSPECTOR (sliders, shown above the viewport) ---------- -->
+      <aside class="inspector" style="max-width:860px;">
+        <div class="inspector-head">
+          <div class="inspector-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 21V14M4 10V3M12 21V12M12 8V3M20 21V16M20 12V3M1 14H7M9 8H15M17 16H23" stroke="#c9a15a" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span>Inspector</span>
+          </div>
+          <div class="search-box">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#4b4f57" stroke-width="2"/><path d="M20 20L16.5 16.5" stroke="#4b4f57" stroke-width="2" stroke-linecap="round"/></svg>
+            <input type="text" id="paramSearch" placeholder="Filter parameters…">
+          </div>
+          <button id="resetParamsBtn" class="reset-btn">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 1 3 6.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3 21v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Reset
+          </button>
         </div>
-        <button id="reopenViewportBtn" class="pill-btn">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M14 3H21V10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 3L10 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 14V19A2 2 0 0 1 17 21H5A2 2 0 0 1 3 19V7A2 2 0 0 1 5 5H10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span>Ouvrir / réafficher le viewport</span>
-        </button>
-      </div>
 
-      <!-- Template used to build the content of the separate viewport window -->
-      <template id="viewportTemplate">
+        <div class="inspector-body">
+          <div id="inspectorContainer" class="param-list"></div>
+
+          <div class="uniforms-panel">
+            <div class="uniforms-head">
+              <span>Uniforms</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="6" y="6" width="12" height="12" rx="1" stroke="#4b4f57" stroke-width="1.6"/><path d="M9 2V6M15 2V6M9 18V22M15 18V22M2 9H6M2 15H6M18 9H22M18 15H22" stroke="#4b4f57" stroke-width="1.4"/></svg>
+            </div>
+            <div class="uniform-row"><span class="k">iResolution</span><span class="v" id="uRes">800, 450, 1</span></div>
+            <div class="uniform-row"><span class="k">iMouse</span><span class="v" id="uMouse">0, 0, 0, 0</span></div>
+            <div class="uniform-row"><span class="k">iFrame</span><span class="v" id="uFrame">0</span></div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ---------- VIEWPORT (inline, docked below the inspector/sliders) ---------- -->
+      <div id="viewportRoot" style="margin-top:18px;">
         <div id="viewportFrameContainer" style="width:860px;height:510px;max-width:94%;max-height:80vh;aspect-ratio:860/510;">
 
           <canvas id="renderCanvas" style="position:absolute;left:3.48837%;top:5.88235%;width:93.02326%;height:88.23529%;z-index:1;border-radius:1px;"></canvas>
@@ -532,39 +538,7 @@
             </button>
           </div>
         </div>
-      </template>
-
-      <!-- ---------- INSPECTOR (docked under viewport) ---------- -->
-      <aside class="inspector" style="max-width:860px;">
-        <div class="inspector-head">
-          <div class="inspector-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 21V14M4 10V3M12 21V12M12 8V3M20 21V16M20 12V3M1 14H7M9 8H15M17 16H23" stroke="#c9a15a" stroke-width="1.8" stroke-linecap="round"/></svg>
-            <span>Inspector</span>
-          </div>
-          <div class="search-box">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#4b4f57" stroke-width="2"/><path d="M20 20L16.5 16.5" stroke="#4b4f57" stroke-width="2" stroke-linecap="round"/></svg>
-            <input type="text" id="paramSearch" placeholder="Filter parameters…">
-          </div>
-          <button id="resetParamsBtn" class="reset-btn">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 1 3 6.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3 21v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Reset
-          </button>
-        </div>
-
-        <div class="inspector-body">
-          <div id="inspectorContainer" class="param-list"></div>
-
-          <div class="uniforms-panel">
-            <div class="uniforms-head">
-              <span>Uniforms</span>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="6" y="6" width="12" height="12" rx="1" stroke="#4b4f57" stroke-width="1.6"/><path d="M9 2V6M15 2V6M9 18V22M15 18V22M2 9H6M2 15H6M18 9H22M18 15H22" stroke="#4b4f57" stroke-width="1.4"/></svg>
-            </div>
-            <div class="uniform-row"><span class="k">iResolution</span><span class="v" id="uRes">800, 450, 1</span></div>
-            <div class="uniform-row"><span class="k">iMouse</span><span class="v" id="uMouse">0, 0, 0, 0</span></div>
-            <div class="uniform-row"><span class="k">iFrame</span><span class="v" id="uFrame">0</span></div>
-          </div>
-        </div>
-      </aside>
+      </div>
     </main>
 
     <!-- ---------- EDITOR ---------- -->
@@ -623,7 +597,7 @@
     <span>BS &nbsp;·&nbsp; Real-time GLSL Render Environment</span>
     <span style="display:flex;align-items:center;gap:8px;">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M16 18L22 12L16 6M8 6L2 12L8 18" stroke="#4b4f57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      WebGL &nbsp;·&nbsp; Babylon.js &nbsp;·&nbsp; CodeMirror
+      WebGL &nbsp;·&nbsp; Three.js &nbsp;·&nbsp; CodeMirror
     </span>
   </footer>
 </div>
@@ -848,11 +822,11 @@ void mainImage(out vec4 couleurPixel, in vec2 coordonneePixel) {
 
     const SHADER_PRESETS = { default: DEFAULT_SHADER, warp: WARP_SHADER, calm: CALM_SHADER };
 
-    // canvas/engine/scene/camera live in the separate viewport window and are
-    // created by mountViewport() once that window (and its <canvas>) exists.
-    let canvas, engine, scene, camera, vwWin = null;
-    
-    let postProcess = null;
+    // canvas/renderer/scene/camera are created inline by mountViewport()
+    // once the DOM (and its <canvas>) exists.
+    let canvas, renderer, scene, camera;
+    let quadMesh = null, currentMaterial = null, shaderUniforms = null;
+
     let channelTextures = [null, null, null, null];
     let isPlaying = true;
     let currentTime = 0;
@@ -899,40 +873,81 @@ void mainImage(out vec4 couleurPixel, in vec2 coordonneePixel) {
         return params;
     }
 
+    // Names used in a for-loop's init/bound/step must stay compile-time
+    // #define constants in GLSL ES 1.00 (WebGL1) — "for (float x = A; x < B; x += C)"
+    // requires A, B and C to be constant expressions. Promoting them to
+    // uniforms (as we do for other #define'd numbers, so they're tweakable
+    // in the inspector) breaks compilation. Detect that usage and leave
+    // those particular names as #define so pasted Shadertoy code just works.
+    function findLoopConstantNames(code) {
+        const protectedNames = new Set();
+        const forRegex = /for\s*\(([^;]*);([^;]*);([^)]*)\)/g;
+        let m;
+        while ((m = forRegex.exec(code)) !== null) {
+            const init = m[1];
+            const condition = m[2];
+            const increment = m[3];
+            const identRegex = /[A-Za-z_][A-Za-z0-9_]*/g;
+            let im;
+            while ((im = identRegex.exec(init)) !== null) protectedNames.add(im[0]);
+            while ((im = identRegex.exec(condition)) !== null) protectedNames.add(im[0]);
+            while ((im = identRegex.exec(increment)) !== null) protectedNames.add(im[0]);
+        }
+        return protectedNames;
+    }
+
     function buildShaderCode(userCode, params) {
         let body = userCode;
         let uniformDecls = "";
+        const loopNames = findLoopConstantNames(userCode);
         params.forEach((p) => {
+            if (loopNames.has(p.name)) return; // keep as #define, not tweakable
             const lineRegex = new RegExp('#define\\s+' + p.name + '\\s+[-+]?\\d*\\.?\\d+(?:[eE][-+]?\\d+)?');
             body = body.replace(lineRegex, "");
             uniformDecls += `uniform float ${p.name};\n`;
         });
+        // Rewrite WebGL1-style sampling calls to their GLSL ES 3.00 equivalents,
+        // since pasted Shadertoy code almost always uses the old names.
+        body = body
+            .replace(/\btexture2D\s*\(/g, "texture(")
+            .replace(/\btexture2DProj\s*\(/g, "textureProj(")
+            .replace(/\btextureCube\s*\(/g, "texture(")
+            .replace(/\btexture2DLod\s*\(/g, "textureLod(")
+            .replace(/\btextureCubeLod\s*\(/g, "textureLod(");
         // Full Shadertoy uniform set, so code pasted verbatim from shadertoy.com
         // compiles without edits, whether or not it actually uses each one.
-        return `
-precision highp float;
+        // Matches Shadertoy's own wrapper: mainImage(out vec4 fragColor, in vec2 fragCoord).
+        // Emitted as GLSL ES 3.00 (WebGL2) rather than 1.00: Shadertoy code often
+        // relies on things 1.00 doesn't allow (tanh(), non-basic for-loop step
+        // operators like /=, etc.) that 3.00 permits without rewriting the loops.
+        return `precision highp float;
 precision highp int;
+precision mediump sampler2D;
 
-uniform vec3      iResolution;
+uniform vec3       iResolution;
 uniform float      iTime;
 uniform float      iTimeDelta;
 uniform float      iFrameRate;
-uniform int         iFrame;
+uniform int        iFrame;
 uniform float      iChannelTime[4];
 uniform vec3       iChannelResolution[4];
-uniform vec4      iMouse;
+uniform vec4       iMouse;
 uniform sampler2D  iChannel0;
 uniform sampler2D  iChannel1;
 uniform sampler2D  iChannel2;
 uniform sampler2D  iChannel3;
-uniform vec4      iDate;
+uniform vec4       iDate;
 uniform float      iSampleRate;
+
+out vec4 _glFragColor;
 
 ${uniformDecls}
 ` + body + `
 
 void main(void) {
-    mainImage(gl_FragColor, gl_FragCoord.xy);
+    vec4 fragColor = vec4(0.0);
+    mainImage(fragColor, gl_FragCoord.xy);
+    _glFragColor = fragColor;
 }
 `;
     }
@@ -949,84 +964,95 @@ void main(void) {
     }
 
     function compileShader(refreshInspector = true) {
-        if (!engine || !scene) { showToast("Ouvrez la fenêtre du viewport pour compiler"); return; }
+        if (!renderer || !scene) { showToast("Ouvrez la fenêtre du viewport pour compiler"); return; }
         const code = editor.getValue();
-        const params = extractParams(code);
+        const loopNames = findLoopConstantNames(code);
+        const params = extractParams(code).filter(p => !loopNames.has(p.name));
         currentParameters = params;
         const fullCode = buildShaderCode(code, params);
-        
-        BABYLON.Effect.ShadersStore["customFragmentShader"] = fullCode;
 
-        if (postProcess) {
-            postProcess.dispose();
-            postProcess = null;
-        }
+        const uniforms = {
+            iResolution: { value: new THREE.Vector3(canvas.width, canvas.height, 1.0) },
+            iTime: { value: currentTime },
+            iTimeDelta: { value: 0 },
+            iFrameRate: { value: 60 },
+            iFrame: { value: frameCount },
+            iChannelTime: { value: [currentTime, currentTime, currentTime, currentTime] },
+            iChannelResolution: { value: [
+                new THREE.Vector3(1, 1, 1), new THREE.Vector3(1, 1, 1),
+                new THREE.Vector3(1, 1, 1), new THREE.Vector3(1, 1, 1)
+            ] },
+            iMouse: { value: new THREE.Vector4(mouse.x, mouse.y, mouse.z, mouse.w) },
+            iChannel0: { value: channelTextures[0] },
+            iChannel1: { value: channelTextures[1] },
+            iChannel2: { value: channelTextures[2] },
+            iChannel3: { value: channelTextures[3] },
+            iDate: { value: new THREE.Vector4(0, 0, 0, 0) },
+            iSampleRate: { value: 44100.0 }
+        };
+        params.forEach((p) => { uniforms[p.name] = { value: p.value }; });
+
+        const vertexShader = `
+in vec3 position;
+void main() {
+    gl_Position = vec4(position, 1.0);
+}`;
 
         try {
-            const uniformNames = [
-                "iResolution", "iTime", "iTimeDelta", "iFrameRate", "iFrame",
-                "iChannelTime", "iChannelResolution", "iMouse", "iDate", "iSampleRate"
-            ].concat(params.map(p => p.name));
-            const samplerNames = ["iChannel0", "iChannel1", "iChannel2", "iChannel3"];
-
-            postProcess = new BABYLON.PostProcess(
-                "ShadertoyPostProcess_" + Date.now(),
-                "custom",
-                uniformNames,
-                samplerNames,
-                renderScale,
-                camera,
-                BABYLON.Texture.BILINEAR_SAMPLINGMODE,
-                engine,
-                false
-            );
-
-            postProcess.onEffectCreatedObservable.add((effect) => {
-                effect.onCompiled = () => {
-                    setCompileStatus(true, "Compiled");
-                    document.getElementById("errorConsole").classList.remove("show");
-                };
-                effect.onError = (eff, err) => {
-                    setCompileStatus(false, "Error");
-                    document.getElementById("errorConsole").classList.add("show");
-                    document.getElementById("errorText").innerText = err;
-                };
+            const newMaterial = new THREE.RawShaderMaterial({
+                uniforms: uniforms,
+                vertexShader: vertexShader,
+                fragmentShader: fullCode,
+                glslVersion: THREE.GLSL3,
+                depthTest: false,
+                depthWrite: false
             });
 
-            let lastFrameTime = performance.now();
-            const startDate = new Date();
-            postProcess.onApply = (effect) => {
-                const now = performance.now();
-                const delta = (now - lastFrameTime) / 1000;
-                lastFrameTime = now;
-
-                const d = new Date();
-                const secondsOfDay = d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds() + d.getMilliseconds() / 1000;
-
-                effect.setFloat3("iResolution", canvas.width, canvas.height, 1.0);
-                effect.setFloat("iTime", currentTime);
-                effect.setFloat("iTimeDelta", delta);
-                effect.setFloat("iFrameRate", engine.getFps());
-                effect.setInt("iFrame", frameCount);
-                effect.setArray("iChannelTime", [currentTime, currentTime, currentTime, currentTime]);
-                effect.setArray3("iChannelResolution", [
-                    canvas.width, canvas.height, 1.0,
-                    canvas.width, canvas.height, 1.0,
-                    canvas.width, canvas.height, 1.0,
-                    canvas.width, canvas.height, 1.0
-                ]);
-                effect.setVector4("iMouse", new BABYLON.Vector4(mouse.x, mouse.y, mouse.z, mouse.w));
-                effect.setVector4("iDate", new BABYLON.Vector4(d.getFullYear(), d.getMonth(), d.getDate(), secondsOfDay));
-                effect.setFloat("iSampleRate", 44100.0);
-                for (let i = 0; i < 4; i++) {
-                    if (channelTextures[i]) effect.setTexture("iChannel" + i, channelTextures[i]);
-                }
-                currentParameters.forEach((p) => {
-                    effect.setFloat(p.name, p.value);
-                });
+            // Force an immediate compile check by rendering once off-screen;
+            // Three.js surfaces GLSL errors via console + the WebGLProgram's
+            // diagnostics object (populated when debug.checkShaderErrors is on).
+            const prevOnError = console.error;
+            let captured = "";
+            console.error = function (...args) {
+                captured += args.map(a => (typeof a === "string" ? a : JSON.stringify(a))).join(" ") + "\n";
+                prevOnError.apply(console, args);
             };
 
+            if (quadMesh) {
+                quadMesh.material.dispose();
+                quadMesh.material = newMaterial;
+            } else {
+                const geometry = new THREE.PlaneGeometry(2, 2);
+                quadMesh = new THREE.Mesh(geometry, newMaterial);
+                scene.add(quadMesh);
+            }
+            shaderUniforms = uniforms;
+            currentMaterial = newMaterial;
+
+            renderer.render(scene, camera);
+
+            console.error = prevOnError;
+
+            let diagnostics = null;
+            try { diagnostics = newMaterial.program ? newMaterial.program.diagnostics : null; } catch (e) {}
+            const failed = (diagnostics && !diagnostics.runnable) || (!diagnostics && /ERROR/.test(captured));
+
+            if (failed) {
+                setCompileStatus(false, "Error");
+                document.getElementById("errorConsole").classList.add("show");
+                let msg = captured || "Shader compilation failed";
+                if (diagnostics) {
+                    const fLog = diagnostics.fragmentShader && diagnostics.fragmentShader.log;
+                    const pLog = diagnostics.programLog;
+                    msg = fLog || pLog || msg;
+                }
+                document.getElementById("errorText").innerText = msg;
+            } else {
+                setCompileStatus(true, "Compiled");
+                document.getElementById("errorConsole").classList.remove("show");
+            }
         } catch (err) {
+            setCompileStatus(false, "Error");
             document.getElementById("errorConsole").classList.add("show");
             document.getElementById("errorText").innerText = err.message || err;
         }
@@ -1104,8 +1130,9 @@ void main(void) {
         const code = editor.getValue();
         const container = document.getElementById("inspectorContainer");
         const filter = document.getElementById("paramSearch").value.toLowerCase();
-        
-        const params = extractParams(code);
+
+        const loopNames = findLoopConstantNames(code);
+        const params = extractParams(code).filter(p => !loopNames.has(p.name));
 
         currentParameters = params;
         container.innerHTML = "";
@@ -1390,7 +1417,20 @@ void main(void) {
             frameCount = i;
 
             // render exactly one frame synchronously
-            scene.render();
+            if (shaderUniforms) {
+                const d = new Date();
+                const secondsOfDay = d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds() + d.getMilliseconds() / 1000;
+                shaderUniforms.iResolution.value.set(canvas.width, canvas.height, 1.0);
+                shaderUniforms.iTime.value = currentTime;
+                shaderUniforms.iTimeDelta.value = 1 / exportFps;
+                shaderUniforms.iFrame.value = frameCount;
+                shaderUniforms.iChannelTime.value = [currentTime, currentTime, currentTime, currentTime];
+                shaderUniforms.iDate.value.set(d.getFullYear(), d.getMonth(), d.getDate(), secondsOfDay);
+                currentParameters.forEach((p) => {
+                    if (shaderUniforms[p.name]) shaderUniforms[p.name].value = p.value;
+                });
+            }
+            if (quadMesh) renderer.render(scene, camera);
 
             // push this rendered frame into the capture stream
             if (track.requestFrame) {
@@ -1487,52 +1527,29 @@ void main(void) {
     });
 
     // =========================================================
-    // Separate viewport window: opened automatically on load,
-    // holds the render canvas, gold frame and transport bar.
+    // Inline viewport: lives in the main document, docked above
+    // the inspector panel (no more separate popup window).
     // =========================================================
-    const viewportDot = document.getElementById("viewportStatusDot");
-    const viewportLabel = document.getElementById("viewportStatusLabel");
-    const reopenViewportBtn = document.getElementById("reopenViewportBtn");
-
-    function setViewportStatus(state, text) {
-        viewportDot.classList.remove("live", "blocked");
-        if (state) viewportDot.classList.add(state);
-        viewportLabel.innerText = text;
-    }
-
-    function buildPopupDocument(win) {
-        const styleText = document.querySelector("style").innerHTML;
-        const fontLink = document.querySelector('link[href*="fonts.googleapis"]').outerHTML;
-        const bodyHTML = document.getElementById("viewportTemplate").innerHTML;
-        win.document.open();
-        win.document.write(
-            "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>BS — Viewport</title>" +
-            fontLink +
-            "<style>" + styleText +
-            "html,body{height:100%;margin:0;background:var(--void);}" +
-            "body{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}" +
-            "</style></head><body>" + bodyHTML + "</body></html>"
-        );
-        win.document.close();
-    }
-
-    function mountViewport(win) {
-        vwWin = win;
-        const d = win.document;
+    function mountViewport() {
+        const d = document;
 
         canvas = d.getElementById("renderCanvas");
-        engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
-        scene = new BABYLON.Scene(engine);
-        camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0, 0, -1), scene);
+        renderer = new THREE.WebGLRenderer({ canvas: canvas, preserveDrawingBuffer: true, antialias: false });
+        renderer.setPixelRatio(1);
+        renderer.debug.checkShaderErrors = true;
+        scene = new THREE.Scene();
+        camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
         // Fallback 1x1 black textures so iChannel0..3 are always bound to
         // something valid, even if the pasted Shadertoy code samples them
         // without the user having assigned real media.
         for (let i = 0; i < 4; i++) {
-            channelTextures[i] = BABYLON.RawTexture.CreateRGBATexture(
-                new Uint8Array([0, 0, 0, 255]), 1, 1, scene,
-                false, false, BABYLON.Texture.BILINEAR_SAMPLINGMODE
-            );
+            const data = new Uint8Array([0, 0, 0, 255]);
+            const tex = new THREE.DataTexture(data, 1, 1, THREE.RGBAFormat);
+            tex.magFilter = THREE.LinearFilter;
+            tex.minFilter = THREE.LinearFilter;
+            tex.needsUpdate = true;
+            channelTextures[i] = tex;
         }
 
         d.getElementById("playPauseBtn").addEventListener("click", () => {
@@ -1563,13 +1580,11 @@ void main(void) {
         });
 
         d.getElementById("screenshotBtn").addEventListener("click", () => {
-            engine.onEndFrameObservable.addOnce(() => {
-                const a = d.createElement("a");
-                a.href = canvas.toDataURL("image/png");
-                a.download = "bs_shader.png";
-                a.click();
-                showToast("Screenshot saved");
-            });
+            const a = d.createElement("a");
+            a.href = canvas.toDataURL("image/png");
+            a.download = "bs_shader.png";
+            a.click();
+            showToast("Screenshot saved");
         });
 
         exportBtn = d.getElementById("exportBtn");
@@ -1593,7 +1608,7 @@ void main(void) {
             mouse.w = mouse.y;
         });
 
-        win.addEventListener("mouseup", () => {
+        window.addEventListener("mouseup", () => {
             isMouseDown = false;
             mouse.z = -Math.abs(mouse.z);
             mouse.w = -Math.abs(mouse.w);
@@ -1607,15 +1622,25 @@ void main(void) {
             }
         });
 
-        win.addEventListener("resize", () => { engine.resize(); });
+        function resizeToDisplaySize() {
+            const rect = canvas.getBoundingClientRect();
+            const w = Math.max(1, Math.round(rect.width * renderScale));
+            const h = Math.max(1, Math.round(rect.height * renderScale));
+            if (canvas.width !== w || canvas.height !== h) {
+                renderer.setSize(w, h, false);
+            }
+        }
 
-        win.addEventListener("beforeunload", () => {
-            try { engine.dispose(); } catch (err) {}
-            canvas = engine = scene = camera = null;
-            setViewportStatus("blocked", "Fenêtre fermée — cliquez pour rouvrir");
-        });
+        window.addEventListener("resize", () => { resizeToDisplaySize(); });
 
-        engine.runRenderLoop(() => {
+        resizeToDisplaySize();
+
+        let fpsFrames = 0, fpsDisplay = 60, lastFpsUpdate = performance.now();
+
+        function renderLoop() {
+            if (!renderer) return;
+            resizeToDisplaySize();
+
             const now = performance.now();
             const delta = (now - lastTime) / 1000;
             lastTime = now;
@@ -1625,36 +1650,51 @@ void main(void) {
                 frameCount++;
             }
 
-            document.getElementById("fpsVal").innerText = Math.round(engine.getFps());
+            fpsFrames++;
+            if (now - lastFpsUpdate > 400) {
+                fpsDisplay = Math.round((fpsFrames * 1000) / (now - lastFpsUpdate));
+                fpsFrames = 0;
+                lastFpsUpdate = now;
+            }
+
+            if (shaderUniforms) {
+                const dt = new Date();
+                const secondsOfDay = dt.getHours() * 3600 + dt.getMinutes() * 60 + dt.getSeconds() + dt.getMilliseconds() / 1000;
+
+                shaderUniforms.iResolution.value.set(canvas.width, canvas.height, 1.0);
+                shaderUniforms.iTime.value = currentTime;
+                shaderUniforms.iTimeDelta.value = delta;
+                shaderUniforms.iFrameRate.value = fpsDisplay;
+                shaderUniforms.iFrame.value = frameCount;
+                shaderUniforms.iChannelTime.value = [currentTime, currentTime, currentTime, currentTime];
+                shaderUniforms.iMouse.value.set(mouse.x, mouse.y, mouse.z, mouse.w);
+                shaderUniforms.iDate.value.set(dt.getFullYear(), dt.getMonth(), dt.getDate(), secondsOfDay);
+                for (let i = 0; i < 4; i++) {
+                    shaderUniforms["iChannel" + i].value = channelTextures[i];
+                }
+                currentParameters.forEach((p) => {
+                    if (shaderUniforms[p.name]) shaderUniforms[p.name].value = p.value;
+                });
+            }
+
+            document.getElementById("fpsVal").innerText = fpsDisplay;
             document.getElementById("timeVal").innerText = currentTime.toFixed(2) + "s";
             document.getElementById("resVal").innerText = canvas.width + "×" + canvas.height;
             document.getElementById("uRes").innerText = `${canvas.width}, ${canvas.height}, 1`;
             document.getElementById("uMouse").innerText = `${Math.round(mouse.x)}, ${Math.round(mouse.y)}, ${Math.round(mouse.z)}, ${Math.round(mouse.w)}`;
             document.getElementById("uFrame").innerText = frameCount;
 
-            scene.render();
-        });
+            if (quadMesh) renderer.render(scene, camera);
 
-        setViewportStatus("live", "Viewport actif dans une fenêtre séparée");
+            window.requestAnimationFrame(renderLoop);
+        }
+
+        window.requestAnimationFrame(renderLoop);
+
         compileShader();
     }
 
-    function openViewportWindow() {
-        if (vwWin && !vwWin.closed) { vwWin.focus(); return; }
-        const win = window.open("", "bs_shader_viewport", "width=960,height=760,resizable=yes,toolbar=no,menubar=no,location=no,status=no");
-        if (!win) {
-            setViewportStatus("blocked", "Popup bloqué par le navigateur — autorisez les popups puis cliquez ici");
-            return;
-        }
-        buildPopupDocument(win);
-        mountViewport(win);
-    }
-
-    reopenViewportBtn.addEventListener("click", openViewportWindow);
-
-    // Best-effort auto-open on load; browsers may block a non-gesture popup,
-    // in which case the status bar above turns into a manual "open" prompt.
-    openViewportWindow();
+    mountViewport();
 </script>
 </body>
 </html>

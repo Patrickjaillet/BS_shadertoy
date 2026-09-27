@@ -853,6 +853,7 @@ void mainImage(out vec4 couleurPixel, in vec2 coordonneePixel) {
     let canvas, engine, scene, camera, vwWin = null;
     
     let postProcess = null;
+    let channelTextures = [null, null, null, null];
     let isPlaying = true;
     let currentTime = 0;
     let lastTime = performance.now();
@@ -906,13 +907,27 @@ void mainImage(out vec4 couleurPixel, in vec2 coordonneePixel) {
             body = body.replace(lineRegex, "");
             uniformDecls += `uniform float ${p.name};\n`;
         });
+        // Full Shadertoy uniform set, so code pasted verbatim from shadertoy.com
+        // compiles without edits, whether or not it actually uses each one.
         return `
 precision highp float;
-uniform vec3 iResolution;
-uniform float iTime;
-uniform float iTimeDelta;
-uniform vec4 iMouse;
-uniform int iFrame;
+precision highp int;
+
+uniform vec3      iResolution;
+uniform float      iTime;
+uniform float      iTimeDelta;
+uniform float      iFrameRate;
+uniform int         iFrame;
+uniform float      iChannelTime[4];
+uniform vec3       iChannelResolution[4];
+uniform vec4      iMouse;
+uniform sampler2D  iChannel0;
+uniform sampler2D  iChannel1;
+uniform sampler2D  iChannel2;
+uniform sampler2D  iChannel3;
+uniform vec4      iDate;
+uniform float      iSampleRate;
+
 ${uniformDecls}
 ` + body + `
 
@@ -948,12 +963,17 @@ void main(void) {
         }
 
         try {
-            const uniformNames = ["iResolution", "iTime", "iTimeDelta", "iMouse", "iFrame"].concat(params.map(p => p.name));
+            const uniformNames = [
+                "iResolution", "iTime", "iTimeDelta", "iFrameRate", "iFrame",
+                "iChannelTime", "iChannelResolution", "iMouse", "iDate", "iSampleRate"
+            ].concat(params.map(p => p.name));
+            const samplerNames = ["iChannel0", "iChannel1", "iChannel2", "iChannel3"];
+
             postProcess = new BABYLON.PostProcess(
                 "ShadertoyPostProcess_" + Date.now(),
                 "custom",
                 uniformNames,
-                null,
+                samplerNames,
                 renderScale,
                 camera,
                 BABYLON.Texture.BILINEAR_SAMPLINGMODE,
@@ -974,16 +994,33 @@ void main(void) {
             });
 
             let lastFrameTime = performance.now();
+            const startDate = new Date();
             postProcess.onApply = (effect) => {
                 const now = performance.now();
                 const delta = (now - lastFrameTime) / 1000;
                 lastFrameTime = now;
 
+                const d = new Date();
+                const secondsOfDay = d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds() + d.getMilliseconds() / 1000;
+
                 effect.setFloat3("iResolution", canvas.width, canvas.height, 1.0);
                 effect.setFloat("iTime", currentTime);
                 effect.setFloat("iTimeDelta", delta);
-                effect.setVector4("iMouse", new BABYLON.Vector4(mouse.x, mouse.y, mouse.z, mouse.w));
+                effect.setFloat("iFrameRate", engine.getFps());
                 effect.setInt("iFrame", frameCount);
+                effect.setArray("iChannelTime", [currentTime, currentTime, currentTime, currentTime]);
+                effect.setArray3("iChannelResolution", [
+                    canvas.width, canvas.height, 1.0,
+                    canvas.width, canvas.height, 1.0,
+                    canvas.width, canvas.height, 1.0,
+                    canvas.width, canvas.height, 1.0
+                ]);
+                effect.setVector4("iMouse", new BABYLON.Vector4(mouse.x, mouse.y, mouse.z, mouse.w));
+                effect.setVector4("iDate", new BABYLON.Vector4(d.getFullYear(), d.getMonth(), d.getDate(), secondsOfDay));
+                effect.setFloat("iSampleRate", 44100.0);
+                for (let i = 0; i < 4; i++) {
+                    if (channelTextures[i]) effect.setTexture("iChannel" + i, channelTextures[i]);
+                }
                 currentParameters.forEach((p) => {
                     effect.setFloat(p.name, p.value);
                 });
@@ -1487,6 +1524,16 @@ void main(void) {
         engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
         scene = new BABYLON.Scene(engine);
         camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0, 0, -1), scene);
+
+        // Fallback 1x1 black textures so iChannel0..3 are always bound to
+        // something valid, even if the pasted Shadertoy code samples them
+        // without the user having assigned real media.
+        for (let i = 0; i < 4; i++) {
+            channelTextures[i] = BABYLON.RawTexture.CreateRGBATexture(
+                new Uint8Array([0, 0, 0, 255]), 1, 1, scene,
+                false, false, BABYLON.Texture.BILINEAR_SAMPLINGMODE
+            );
+        }
 
         d.getElementById("playPauseBtn").addEventListener("click", () => {
             isPlaying = !isPlaying;

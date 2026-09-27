@@ -111,8 +111,8 @@
 
   /* ---- Inspector panel (now docked under the viewport) ---- */
   .inspector{
-    width:100%; flex:0 0 auto; background:var(--charcoal); border-top:1px solid var(--line);
-    display:flex; flex-direction:column; min-height:0; max-height:38vh; margin-top:18px;
+    width:100%; flex:1 1 auto; min-height:0; background:var(--charcoal); border-top:1px solid var(--line);
+    display:flex; flex-direction:column; margin-top:18px;
     border-radius:8px; border:1px solid var(--line); overflow:hidden;
   }
   .inspector-head{
@@ -129,7 +129,7 @@
   }
   .reset-btn:hover{ border-color:var(--ember); color:var(--ember); }
 
-  .inspector-body{ flex:1 1 auto; display:flex; min-height:0; }
+  .inspector-body{ flex:1 1 auto; min-height:0; display:grid; grid-template-columns:1fr 220px; align-items:stretch; }
 
   .search-row{ padding:10px 14px; border-bottom:1px solid var(--line-soft); flex:0 0 auto; }
   .search-box{ position:relative; max-width:260px; }
@@ -142,8 +142,8 @@
   .search-box svg{ position:absolute; left:9px; top:50%; transform:translateY(-50%); }
 
   .param-list{
-    flex:1 1 auto; overflow-y:auto; padding:12px 16px;
-    display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px; align-content:start;
+    width:100%; min-height:0; overflow-y:auto; padding:12px 16px;
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:10px; align-content:start;
   }
 
   .param-card{
@@ -165,13 +165,28 @@
 
   .uniforms-panel{
     border-left:1px solid var(--line-soft); padding:12px 16px 14px; background:#0d0f13;
-    flex:0 0 200px; overflow-y:auto;
+    min-height:0; overflow-y:auto;
   }
   .uniforms-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:9px; }
   .uniforms-head span{ font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-faint); font-weight:600; }
   .uniform-row{ display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:11px; padding:2.5px 0; gap:10px; }
   .uniform-row .k{ color:var(--ink-faint); }
   .uniform-row .v{ color:#a8adb8; white-space:nowrap; }
+
+  /* ---- Viewport-window status bar ---- */
+  .viewport-notice{
+    width:100%; max-width:860px; display:flex; align-items:center; justify-content:space-between;
+    background:linear-gradient(180deg,#14171c,#101318); border:1px solid var(--line); border-radius:8px;
+    padding:12px 16px; gap:14px;
+  }
+  .viewport-notice-left{ display:flex; align-items:center; gap:10px; }
+  .viewport-dot{
+    width:9px; height:9px; border-radius:50%; background:var(--ink-faint); flex:0 0 auto;
+    box-shadow:0 0 0 3px rgba(255,255,255,.04); transition:background .2s;
+  }
+  .viewport-dot.live{ background:var(--patina); box-shadow:0 0 0 3px rgba(95,174,148,.18); }
+  .viewport-dot.blocked{ background:var(--ember); box-shadow:0 0 0 3px rgba(217,105,74,.18); }
+  #viewportStatusLabel{ font-size:12px; color:var(--ink-dim); }
 
   /* ---- Center stage ---- */
   .stage{
@@ -409,99 +424,115 @@
 
     <!-- ---------- STAGE ---------- -->
     <main class="stage">
-      <div id="viewportFrameContainer" style="width:860px;height:510px;max-width:94%;max-height:66vh;aspect-ratio:860/510;">
 
-        <canvas id="renderCanvas" style="position:absolute;left:3.48837%;top:5.88235%;width:93.02326%;height:88.23529%;z-index:1;border-radius:1px;"></canvas>
-
-        <svg id="goldFrameSvg" viewBox="0 0 860 510" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2;" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="brassMain" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#7a6238"/>
-              <stop offset="22%" stop-color="#e8cd8c"/>
-              <stop offset="50%" stop-color="#9c7d42"/>
-              <stop offset="78%" stop-color="#e3c680"/>
-              <stop offset="100%" stop-color="#6b5228"/>
-            </linearGradient>
-            <linearGradient id="brassEdge" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stop-color="#fff3cf" stop-opacity=".55"/>
-              <stop offset="45%" stop-color="#9c7d42" stop-opacity=".25"/>
-              <stop offset="100%" stop-color="#241a08" stop-opacity=".9"/>
-            </linearGradient>
-            <radialGradient id="gemGrad2" cx="38%" cy="30%" r="70%">
-              <stop offset="0%" stop-color="#fff2c9"/>
-              <stop offset="55%" stop-color="#c99728"/>
-              <stop offset="100%" stop-color="#3a2600"/>
-            </radialGradient>
-          </defs>
-
-          <path fill-rule="evenodd" fill="url(#brassMain)" d="M0,0 H860 V510 H0 Z M26,26 H834 V484 H26 Z"/>
-          <rect x="0" y="0" width="860" height="510" fill="none" stroke="#241a08" stroke-width="2"/>
-          <rect x="4" y="4" width="852" height="502" fill="none" stroke="url(#brassEdge)" stroke-width="2"/>
-          <rect x="26" y="26" width="808" height="458" fill="none" stroke="#0c0700" stroke-width="3"/>
-          <rect x="27" y="27" width="806" height="456" fill="none" stroke="#ffe8a8" stroke-opacity=".3" stroke-width="1"/>
-
-          <!-- fine engraved tick marks along the frame, like a precision instrument -->
-          <g stroke="#3a2c10" stroke-width="1" opacity=".55">
-            <path d="M60,10 V16 M120,10 V16 M180,10 V16 M240,10 V16 M300,10 V16 M360,10 V16 M500,10 V16 M560,10 V16 M620,10 V16 M680,10 V16 M740,10 V16 M800,10 V16"/>
-            <path d="M60,500 V494 M120,500 V494 M180,500 V494 M240,500 V494 M300,500 V494 M360,500 V494 M500,500 V494 M560,500 V494 M620,500 V494 M680,500 V494 M740,500 V494 M800,500 V494"/>
-          </g>
-
-          <g fill="url(#brassMain)" stroke="#2b1e08" stroke-width="1">
-            <path d="M0,0 L46,0 C30,16 30,29 26,46 L26,26 L0,0 Z"/>
-            <path d="M860,0 L814,0 C830,16 830,29 834,46 L834,26 L860,0 Z"/>
-            <path d="M0,510 L46,510 C30,494 30,481 26,464 L26,484 L0,510 Z"/>
-            <path d="M860,510 L814,510 C830,494 830,481 834,464 L834,484 L860,510 Z"/>
-
-            <circle cx="13" cy="13" r="7" fill="url(#gemGrad2)" stroke="#22160a" stroke-width="1.4"/>
-            <circle cx="847" cy="13" r="7" fill="url(#gemGrad2)" stroke="#22160a" stroke-width="1.4"/>
-            <circle cx="13" cy="497" r="7" fill="url(#gemGrad2)" stroke="#22160a" stroke-width="1.4"/>
-            <circle cx="847" cy="497" r="7" fill="url(#gemGrad2)" stroke="#22160a" stroke-width="1.4"/>
-
-            <path d="M430,3 L442,13 L430,23 L418,13 Z" fill="url(#gemGrad2)"/>
-            <path d="M430,487 L442,497 L430,507 L418,497 Z" fill="url(#gemGrad2)"/>
-            <path d="M3,255 L13,265 L23,255 L13,245 Z" fill="url(#gemGrad2)"/>
-            <path d="M837,255 L847,265 L857,255 L847,245 Z" fill="url(#gemGrad2)"/>
-          </g>
-        </svg>
+      <!-- ---------- VIEWPORT WINDOW STATUS ---------- -->
+      <div class="viewport-notice">
+        <div class="viewport-notice-left">
+          <span id="viewportStatusDot" class="viewport-dot"></span>
+          <span id="viewportStatusLabel">Ouverture de la fenêtre viewport…</span>
+        </div>
+        <button id="reopenViewportBtn" class="pill-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M14 3H21V10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 3L10 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 14V19A2 2 0 0 1 17 21H5A2 2 0 0 1 3 19V7A2 2 0 0 1 5 5H10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Ouvrir / réafficher le viewport</span>
+        </button>
       </div>
 
-      <!-- transport -->
-      <div class="transport" style="max-width:860px;">
-        <div class="transport-group">
-          <button id="playPauseBtn" class="icon-btn primary" title="Play / Pause">
-            <svg id="playIconSvg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
-          </button>
-          <button id="resetTimeBtn" class="icon-btn" title="Reset time">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 1 3 6.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3 21v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
+      <!-- Template used to build the content of the separate viewport window -->
+      <template id="viewportTemplate">
+        <div id="viewportFrameContainer" style="width:860px;height:510px;max-width:94%;max-height:80vh;aspect-ratio:860/510;">
+
+          <canvas id="renderCanvas" style="position:absolute;left:3.48837%;top:5.88235%;width:93.02326%;height:88.23529%;z-index:1;border-radius:1px;"></canvas>
+
+          <svg id="goldFrameSvg" viewBox="0 0 860 510" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2;" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="brassMain" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#7a6238"/>
+                <stop offset="22%" stop-color="#e8cd8c"/>
+                <stop offset="50%" stop-color="#9c7d42"/>
+                <stop offset="78%" stop-color="#e3c680"/>
+                <stop offset="100%" stop-color="#6b5228"/>
+              </linearGradient>
+              <linearGradient id="brassEdge" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#fff3cf" stop-opacity=".55"/>
+                <stop offset="45%" stop-color="#9c7d42" stop-opacity=".25"/>
+                <stop offset="100%" stop-color="#241a08" stop-opacity=".9"/>
+              </linearGradient>
+              <radialGradient id="gemGrad2" cx="38%" cy="30%" r="70%">
+                <stop offset="0%" stop-color="#fff2c9"/>
+                <stop offset="55%" stop-color="#c99728"/>
+                <stop offset="100%" stop-color="#3a2600"/>
+              </radialGradient>
+            </defs>
+
+            <path fill-rule="evenodd" fill="url(#brassMain)" d="M0,0 H860 V510 H0 Z M26,26 H834 V484 H26 Z"/>
+            <rect x="0" y="0" width="860" height="510" fill="none" stroke="#241a08" stroke-width="2"/>
+            <rect x="4" y="4" width="852" height="502" fill="none" stroke="url(#brassEdge)" stroke-width="2"/>
+            <rect x="26" y="26" width="808" height="458" fill="none" stroke="#0c0700" stroke-width="3"/>
+            <rect x="27" y="27" width="806" height="456" fill="none" stroke="#ffe8a8" stroke-opacity=".3" stroke-width="1"/>
+
+            <!-- fine engraved tick marks along the frame, like a precision instrument -->
+            <g stroke="#3a2c10" stroke-width="1" opacity=".55">
+              <path d="M60,10 V16 M120,10 V16 M180,10 V16 M240,10 V16 M300,10 V16 M360,10 V16 M500,10 V16 M560,10 V16 M620,10 V16 M680,10 V16 M740,10 V16 M800,10 V16"/>
+              <path d="M60,500 V494 M120,500 V494 M180,500 V494 M240,500 V494 M300,500 V494 M360,500 V494 M500,500 V494 M560,500 V494 M620,500 V494 M680,500 V494 M740,500 V494 M800,500 V494"/>
+            </g>
+
+            <g fill="url(#brassMain)" stroke="#2b1e08" stroke-width="1">
+              <path d="M0,0 L46,0 C30,16 30,29 26,46 L26,26 L0,0 Z"/>
+              <path d="M860,0 L814,0 C830,16 830,29 834,46 L834,26 L860,0 Z"/>
+              <path d="M0,510 L46,510 C30,494 30,481 26,464 L26,484 L0,510 Z"/>
+              <path d="M860,510 L814,510 C830,494 830,481 834,464 L834,484 L860,510 Z"/>
+
+              <circle cx="13" cy="13" r="7" fill="url(#gemGrad2)" stroke="#22160a" stroke-width="1.4"/>
+              <circle cx="847" cy="13" r="7" fill="url(#gemGrad2)" stroke="#22160a" stroke-width="1.4"/>
+              <circle cx="13" cy="497" r="7" fill="url(#gemGrad2)" stroke="#22160a" stroke-width="1.4"/>
+              <circle cx="847" cy="497" r="7" fill="url(#gemGrad2)" stroke="#22160a" stroke-width="1.4"/>
+
+              <path d="M430,3 L442,13 L430,23 L418,13 Z" fill="url(#gemGrad2)"/>
+              <path d="M430,487 L442,497 L430,507 L418,497 Z" fill="url(#gemGrad2)"/>
+              <path d="M3,255 L13,265 L23,255 L13,245 Z" fill="url(#gemGrad2)"/>
+              <path d="M837,255 L847,265 L857,255 L847,245 Z" fill="url(#gemGrad2)"/>
+            </g>
+          </svg>
         </div>
 
-        <div class="scale-toggle">
-          <span class="scale-label">Scale</span>
-          <div class="scale-btns">
-            <button class="scaleBtn scale-btn" data-scale="0.5">0.5×</button>
-            <button class="scaleBtn scale-btn active" data-scale="1.0">1.0×</button>
+        <!-- transport -->
+        <div class="transport" style="max-width:860px;">
+          <div class="transport-group">
+            <button id="playPauseBtn" class="icon-btn primary" title="Play / Pause">
+              <svg id="playIconSvg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+            </button>
+            <button id="resetTimeBtn" class="icon-btn" title="Reset time">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 1 3 6.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3 21v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+
+          <div class="scale-toggle">
+            <span class="scale-label">Scale</span>
+            <div class="scale-btns">
+              <button class="scaleBtn scale-btn" data-scale="0.5">0.5×</button>
+              <button class="scaleBtn scale-btn active" data-scale="1.0">1.0×</button>
+            </div>
+          </div>
+
+          <div class="transport-group">
+            <button id="toggleFrameBtn" class="pill-btn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M3 9V3H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 15V21H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>Frame</span>
+            </button>
+            <button id="screenshotBtn" class="pill-btn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="1.8"/></svg>
+              <span>Snap</span>
+            </button>
+            <button id="exportBtn" class="pill-btn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M10 9l5 3-5 3z" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>
+              <span>Export</span>
+            </button>
+            <button id="fullscreenBtn" class="icon-btn" title="Fullscreen">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
           </div>
         </div>
-
-        <div class="transport-group">
-          <button id="toggleFrameBtn" class="pill-btn">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M3 9V3H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 15V21H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <span>Frame</span>
-          </button>
-          <button id="screenshotBtn" class="pill-btn">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="1.8"/></svg>
-            <span>Snap</span>
-          </button>
-          <button id="exportBtn" class="pill-btn">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M10 9l5 3-5 3z" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>
-            <span>Export</span>
-          </button>
-          <button id="fullscreenBtn" class="icon-btn" title="Fullscreen">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-        </div>
-      </div>
+      </template>
 
       <!-- ---------- INSPECTOR (docked under viewport) ---------- -->
       <aside class="inspector" style="max-width:860px;">
@@ -817,10 +848,9 @@ void mainImage(out vec4 couleurPixel, in vec2 coordonneePixel) {
 
     const SHADER_PRESETS = { default: DEFAULT_SHADER, warp: WARP_SHADER, calm: CALM_SHADER };
 
-    let canvas = document.getElementById("renderCanvas");
-    let engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
-    let scene = new BABYLON.Scene(engine);
-    let camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0, 0, -1), scene);
+    // canvas/engine/scene/camera live in the separate viewport window and are
+    // created by mountViewport() once that window (and its <canvas>) exists.
+    let canvas, engine, scene, camera, vwWin = null;
     
     let postProcess = null;
     let isPlaying = true;
@@ -904,6 +934,7 @@ void main(void) {
     }
 
     function compileShader(refreshInspector = true) {
+        if (!engine || !scene) { showToast("Ouvrez la fenêtre du viewport pour compiler"); return; }
         const code = editor.getValue();
         const params = extractParams(code);
         currentParameters = params;
@@ -1157,42 +1188,6 @@ void main(void) {
     });
 
     let playing = true;
-    document.getElementById("playPauseBtn").addEventListener("click", () => {
-        isPlaying = !isPlaying;
-        const icon = document.getElementById("playIconSvg");
-        icon.innerHTML = isPlaying
-            ? '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>'
-            : '<path d="M7 4L20 12L7 20Z"/>';
-    });
-
-    document.getElementById("resetTimeBtn").addEventListener("click", () => {
-        currentTime = 0;
-        frameCount = 0;
-    });
-
-    document.querySelectorAll(".scaleBtn").forEach(btn => {
-        btn.addEventListener("click", (e) => {
-            document.querySelectorAll(".scaleBtn").forEach(b => b.classList.remove("active"));
-            e.currentTarget.classList.add("active");
-            renderScale = parseFloat(e.currentTarget.getAttribute("data-scale"));
-            compileShader();
-        });
-    });
-
-    document.getElementById("toggleFrameBtn").addEventListener("click", () => {
-        const frame = document.getElementById("goldFrameSvg");
-        frame.style.display = (frame.style.display === "none") ? "block" : "none";
-    });
-
-    document.getElementById("screenshotBtn").addEventListener("click", () => {
-        engine.onEndFrameObservable.addOnce(() => {
-            const a = document.createElement("a");
-            a.href = canvas.toDataURL("image/png");
-            a.download = "bs_shader.png";
-            a.click();
-            showToast("Screenshot saved");
-        });
-    });
 
     // =========================================================
     // Frame-by-frame video export (WebM / MP4)
@@ -1205,7 +1200,7 @@ void main(void) {
     let exportRunning = false;
 
     const exportModal = document.getElementById("exportModal");
-    const exportBtn = document.getElementById("exportBtn");
+    let exportBtn; // assigned in mountViewport() — lives in the popup window
     const exportCloseBtn = document.getElementById("exportCloseBtn");
     const exportStartBtn = document.getElementById("exportStartBtn");
     const exportStartLabel = document.getElementById("exportStartLabel");
@@ -1227,7 +1222,7 @@ void main(void) {
         exportModal.classList.remove("show");
     }
 
-    exportBtn.addEventListener("click", openExportModal);
+
     exportCloseBtn.addEventListener("click", closeExportModal);
     exportModal.addEventListener("click", (e) => {
         if (e.target === exportModal) closeExportModal();
@@ -1414,15 +1409,6 @@ void main(void) {
     exportStartBtn.addEventListener("click", renderVideoExport);
     exportCancelBtn.addEventListener("click", () => { exportCancelled = true; });
 
-    document.getElementById("fullscreenBtn").addEventListener("click", () => {
-        const container = document.getElementById("viewportFrameContainer");
-        if (!document.fullscreenElement) {
-            container.requestFullscreen().catch(err => console.log(err));
-        } else {
-            document.exitFullscreen();
-        }
-    });
-
     document.getElementById("copyBtn").addEventListener("click", () => {
         const text = editor.getValue();
         if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1453,28 +1439,6 @@ void main(void) {
     });
 
     let isMouseDown = false;
-    canvas.addEventListener("mousedown", (e) => {
-        isMouseDown = true;
-        const rect = canvas.getBoundingClientRect();
-        mouse.x = e.clientX - rect.left;
-        mouse.y = rect.height - (e.clientY - rect.top);
-        mouse.z = mouse.x;
-        mouse.w = mouse.y;
-    });
-
-    window.addEventListener("mouseup", () => {
-        isMouseDown = false;
-        mouse.z = -Math.abs(mouse.z);
-        mouse.w = -Math.abs(mouse.w);
-    });
-
-    canvas.addEventListener("mousemove", (e) => {
-        if (isMouseDown) {
-            const rect = canvas.getBoundingClientRect();
-            mouse.x = e.clientX - rect.left;
-            mouse.y = rect.height - (e.clientY - rect.top);
-        }
-    });
 
     editor.on("change", () => {
         if (!isProgrammaticChange && document.getElementById("autoCompileCheck").checked) {
@@ -1485,31 +1449,165 @@ void main(void) {
         }
     });
 
-    engine.runRenderLoop(() => {
-        const now = performance.now();
-        const delta = (now - lastTime) / 1000;
-        lastTime = now;
+    // =========================================================
+    // Separate viewport window: opened automatically on load,
+    // holds the render canvas, gold frame and transport bar.
+    // =========================================================
+    const viewportDot = document.getElementById("viewportStatusDot");
+    const viewportLabel = document.getElementById("viewportStatusLabel");
+    const reopenViewportBtn = document.getElementById("reopenViewportBtn");
 
-        if (isPlaying) {
-            currentTime += delta;
-            frameCount++;
+    function setViewportStatus(state, text) {
+        viewportDot.classList.remove("live", "blocked");
+        if (state) viewportDot.classList.add(state);
+        viewportLabel.innerText = text;
+    }
+
+    function buildPopupDocument(win) {
+        const styleText = document.querySelector("style").innerHTML;
+        const fontLink = document.querySelector('link[href*="fonts.googleapis"]').outerHTML;
+        const bodyHTML = document.getElementById("viewportTemplate").innerHTML;
+        win.document.open();
+        win.document.write(
+            "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>BS — Viewport</title>" +
+            fontLink +
+            "<style>" + styleText +
+            "html,body{height:100%;margin:0;background:var(--void);}" +
+            "body{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}" +
+            "</style></head><body>" + bodyHTML + "</body></html>"
+        );
+        win.document.close();
+    }
+
+    function mountViewport(win) {
+        vwWin = win;
+        const d = win.document;
+
+        canvas = d.getElementById("renderCanvas");
+        engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
+        scene = new BABYLON.Scene(engine);
+        camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0, 0, -1), scene);
+
+        d.getElementById("playPauseBtn").addEventListener("click", () => {
+            isPlaying = !isPlaying;
+            const icon = d.getElementById("playIconSvg");
+            icon.innerHTML = isPlaying
+                ? '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>'
+                : '<path d="M7 4L20 12L7 20Z"/>';
+        });
+
+        d.getElementById("resetTimeBtn").addEventListener("click", () => {
+            currentTime = 0;
+            frameCount = 0;
+        });
+
+        d.querySelectorAll(".scaleBtn").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                d.querySelectorAll(".scaleBtn").forEach(b => b.classList.remove("active"));
+                e.currentTarget.classList.add("active");
+                renderScale = parseFloat(e.currentTarget.getAttribute("data-scale"));
+                compileShader();
+            });
+        });
+
+        d.getElementById("toggleFrameBtn").addEventListener("click", () => {
+            const frame = d.getElementById("goldFrameSvg");
+            frame.style.display = (frame.style.display === "none") ? "block" : "none";
+        });
+
+        d.getElementById("screenshotBtn").addEventListener("click", () => {
+            engine.onEndFrameObservable.addOnce(() => {
+                const a = d.createElement("a");
+                a.href = canvas.toDataURL("image/png");
+                a.download = "bs_shader.png";
+                a.click();
+                showToast("Screenshot saved");
+            });
+        });
+
+        exportBtn = d.getElementById("exportBtn");
+        exportBtn.addEventListener("click", openExportModal);
+
+        d.getElementById("fullscreenBtn").addEventListener("click", () => {
+            const container = d.getElementById("viewportFrameContainer");
+            if (!d.fullscreenElement) {
+                container.requestFullscreen().catch(err => console.log(err));
+            } else {
+                d.exitFullscreen();
+            }
+        });
+
+        canvas.addEventListener("mousedown", (e) => {
+            isMouseDown = true;
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = rect.height - (e.clientY - rect.top);
+            mouse.z = mouse.x;
+            mouse.w = mouse.y;
+        });
+
+        win.addEventListener("mouseup", () => {
+            isMouseDown = false;
+            mouse.z = -Math.abs(mouse.z);
+            mouse.w = -Math.abs(mouse.w);
+        });
+
+        canvas.addEventListener("mousemove", (e) => {
+            if (isMouseDown) {
+                const rect = canvas.getBoundingClientRect();
+                mouse.x = e.clientX - rect.left;
+                mouse.y = rect.height - (e.clientY - rect.top);
+            }
+        });
+
+        win.addEventListener("resize", () => { engine.resize(); });
+
+        win.addEventListener("beforeunload", () => {
+            try { engine.dispose(); } catch (err) {}
+            canvas = engine = scene = camera = null;
+            setViewportStatus("blocked", "Fenêtre fermée — cliquez pour rouvrir");
+        });
+
+        engine.runRenderLoop(() => {
+            const now = performance.now();
+            const delta = (now - lastTime) / 1000;
+            lastTime = now;
+
+            if (isPlaying) {
+                currentTime += delta;
+                frameCount++;
+            }
+
+            document.getElementById("fpsVal").innerText = Math.round(engine.getFps());
+            document.getElementById("timeVal").innerText = currentTime.toFixed(2) + "s";
+            document.getElementById("resVal").innerText = canvas.width + "×" + canvas.height;
+            document.getElementById("uRes").innerText = `${canvas.width}, ${canvas.height}, 1`;
+            document.getElementById("uMouse").innerText = `${Math.round(mouse.x)}, ${Math.round(mouse.y)}, ${Math.round(mouse.z)}, ${Math.round(mouse.w)}`;
+            document.getElementById("uFrame").innerText = frameCount;
+
+            scene.render();
+        });
+
+        setViewportStatus("live", "Viewport actif dans une fenêtre séparée");
+        compileShader();
+    }
+
+    function openViewportWindow() {
+        if (vwWin && !vwWin.closed) { vwWin.focus(); return; }
+        const win = window.open("", "bs_shader_viewport", "width=960,height=760,resizable=yes,toolbar=no,menubar=no,location=no,status=no");
+        if (!win) {
+            setViewportStatus("blocked", "Popup bloqué par le navigateur — autorisez les popups puis cliquez ici");
+            return;
         }
+        buildPopupDocument(win);
+        mountViewport(win);
+    }
 
-        document.getElementById("fpsVal").innerText = Math.round(engine.getFps());
-        document.getElementById("timeVal").innerText = currentTime.toFixed(2) + "s";
-        document.getElementById("resVal").innerText = canvas.width + "×" + canvas.height;
-        document.getElementById("uRes").innerText = `${canvas.width}, ${canvas.height}, 1`;
-        document.getElementById("uMouse").innerText = `${Math.round(mouse.x)}, ${Math.round(mouse.y)}, ${Math.round(mouse.z)}, ${Math.round(mouse.w)}`;
-        document.getElementById("uFrame").innerText = frameCount;
+    reopenViewportBtn.addEventListener("click", openViewportWindow);
 
-        scene.render();
-    });
-
-    window.addEventListener("resize", () => {
-        engine.resize();
-    });
-
-    compileShader();
+    // Best-effort auto-open on load; browsers may block a non-gesture popup,
+    // in which case the status bar above turns into a manual "open" prompt.
+    openViewportWindow();
 </script>
 </body>
 </html>

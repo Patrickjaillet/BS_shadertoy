@@ -126,6 +126,8 @@
         const savedTime = currentTime;
         const savedFrameCount = frameCount;
         isPlaying = false;
+        // Lot 7 : coupe le son pendant l'export (le temps est piloté à la main)
+        if (typeof syncSoundToTransport === "function") syncSoundToTransport();
 
         const stream = canvas.captureStream(0); // manual frame pushes
         const track = stream.getVideoTracks()[0];
@@ -198,6 +200,7 @@
         isPlaying = wasPlaying;
         currentTime = savedTime;
         frameCount = savedFrameCount;
+        if (typeof syncSoundToTransport === "function") syncSoundToTransport();
 
         exportStartBtn.style.display = "flex";
         exportCancelBtn.style.display = "none";

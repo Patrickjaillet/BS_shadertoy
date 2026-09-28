@@ -11,7 +11,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/clike/clike.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/topbar.css">
+<link rel="stylesheet" href="css/editor.css">
+<link rel="stylesheet" href="css/inspector.css">
+<link rel="stylesheet" href="css/viewport.css">
+<link rel="stylesheet" href="css/channel-picker.css">
+<link rel="stylesheet" href="css/sound-bar.css">
+<link rel="stylesheet" href="css/export-modal.css">
 </head>
 <body class="select-none">
 <svg width="0" height="0" style="position:absolute">
@@ -65,11 +72,29 @@
       </div>
     </div>
 
+    <div class="project-wrap">
+      <input type="text" id="projectNameInput" class="project-name-input" value="Untitled" maxlength="60" spellcheck="false" title="Project name" aria-label="Project name">
+      <button id="projectNewBtn" class="project-btn" title="New project">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 3v5h5M12 12v6M9 15h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        New
+      </button>
+      <button id="projectOpenBtn" class="project-btn" title="Open a project file (.json)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        Open
+      </button>
+      <button id="projectSaveBtn" class="project-btn" title="Save the project as a .json file">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 4v11M7 11l5 5 5-5M5 20h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Save
+      </button>
+      <input type="file" id="projectFileInput" accept=".json,application/json" hidden>
+    </div>
+
     <div class="preset-wrap">
       <span class="preset-label">Preset</span>
       <div class="preset-select-box">
         <select id="presetSelect" class="preset-select">
-          <option value="default">Default Shader</option>
+          <option value="custom" hidden>Custom</option>
+          <option value="default" selected>Default Shader</option>
           <option value="warp">Warp Speed</option>
           <option value="calm">Calm Drift</option>
         </select>
@@ -233,6 +258,16 @@
         </div>
       </div>
 
+      <div id="passTabsBar" class="pass-tabs"></div>
+
+      <div id="soundBar" class="sound-bar">
+        <button id="soundPlayBtn" class="sound-play-btn" title="Play" disabled></button>
+        <div class="sound-info">
+          <span id="soundStatus" class="sound-status">Sound : en attente de compilation</span>
+          <div class="sound-progress"><div id="soundProgressFill" class="sound-progress-fill"></div></div>
+        </div>
+      </div>
+
       <div class="editor-toolbar">
         <div class="toolbar-btns">
           <button id="copyBtn" class="tb-btn">
@@ -254,6 +289,8 @@
         <textarea id="codeEditor"></textarea>
       </div>
 
+      <div id="iChannelSlotsBar" class="ichannel-slots"></div>
+
       <div id="errorConsole" class="error-console">
         <div class="error-head">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="1.8"/><path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -273,6 +310,20 @@
       WebGL &nbsp;·&nbsp; Three.js &nbsp;·&nbsp; CodeMirror
     </span>
   </footer>
+</div>
+
+<div id="channelPickerModal" class="channel-picker-modal">
+  <div class="cp-card-wrap">
+    <div class="cp-head">
+      <span id="channelPickerTitle" class="cp-title">Select input for iChannel0</span>
+      <button id="channelPickerCloseBtn" class="icon-btn" style="width:28px;height:28px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div id="channelPickerTabsBar" class="cp-tabs"></div>
+    <div id="channelPickerGrid" class="cp-grid"></div>
+    <div id="channelPickerPagination" class="cp-pagination"></div>
+  </div>
 </div>
 
 <div id="exportModal" class="export-modal">
@@ -358,13 +409,27 @@
   <rect width="100%" height="100%" filter="url(#grainFilter)"/>
 </svg>
 
-<script src="js/shaders.js"></script>
-<script src="js/state.js"></script>
-<script src="js/shader-compiler.js"></script>
-<script src="js/sliders.js"></script>
-<script src="js/inspector.js"></script>
+<script src="js/core/shaders-presets.js"></script>
+<script src="js/core/state.js"></script>
+<script src="js/passes/pass-model.js"></script>
+<script src="js/buffers/buffer-manager.js"></script>
+<script src="js/buffers/cubemap-pass.js"></script>
+<script src="js/passes/pass-registry.js"></script>
+<script src="js/passes/render-graph.js"></script>
+<script src="js/passes/sound-pass.js"></script>
+<script src="js/assets/asset-library.js"></script>
+<script src="js/assets/asset-loader.js"></script>
+<script src="js/assets/keyboard-input.js"></script>
+<script src="js/ui/editor-tabs.js"></script>
+<script src="js/ui/channel-picker/channel-picker-render.js"></script>
+<script src="js/ui/channel-picker/channel-picker.js"></script>
+<script src="js/compiler/glsl-transform.js"></script>
+<script src="js/compiler/shader-compiler.js"></script>
+<script src="js/ui/sliders.js"></script>
+<script src="js/ui/inspector.js"></script>
 <script src="js/video-export.js"></script>
-<script src="js/editor-toolbar.js"></script>
+<script src="js/ui/editor-toolbar.js"></script>
+<script src="js/core/project-io.js"></script>
 <script src="js/viewport.js"></script>
 </body>
 </html>

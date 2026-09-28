@@ -1,0 +1,101 @@
+  /* ---- iChannel slots (under the editor) + "Select input for iChannelN" modal ----
+     Lot 4. Style adapted to this site's dark/brass palette (see base.css
+     variables) rather than shadertoy.com's light-grey picker — structure
+     (6 tabs, 3-col grid, 3:2 thumbnails, name+author+meta, pagination)
+     matches the captures described in ROADMAP.md; exact pixel-matching of
+     colors/spacing against them is deferred to Lot 9. */
+
+  /* -- iChannel0-3 squares, below the CodeMirror editor -- */
+  .ichannel-slots{
+    display:flex; gap:8px; padding:10px 12px; flex:0 0 auto;
+    border-top:1px solid var(--line-soft); background:#101318;
+  }
+  .ichannel-slot{
+    position:relative; flex:1 1 0; aspect-ratio:3/2; border-radius:5px; cursor:pointer;
+    background:var(--panel); border:1px dashed var(--line); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:2px; transition:.15s; overflow:hidden;
+  }
+  .ichannel-slot:hover{ border-color:var(--brass-dim); }
+  .ichannel-slot.bound{ border-style:solid; border-color:var(--line); background:var(--panel-2); }
+  .ichannel-slot.bound:hover{ border-color:var(--brass); }
+  .ichannel-slot-idx{
+    position:absolute; top:3px; left:5px; font-family:'JetBrains Mono',monospace; font-size:8px;
+    letter-spacing:.04em; color:var(--ink-faint); pointer-events:none;
+  }
+  .ichannel-slot-body{ display:flex; align-items:center; justify-content:center; width:100%; }
+  .ichannel-slot-empty{ font-size:15px; color:var(--ink-faint); pointer-events:none; }
+  .ichannel-slot-label{
+    font-family:'Space Grotesk',sans-serif; font-size:10px; font-weight:600; color:var(--brass-bright);
+    text-align:center; padding:0 6px; pointer-events:none; line-height:1.3;
+  }
+  .ichannel-slot-clear{
+    position:absolute; top:3px; right:4px; width:13px; height:13px; border-radius:3px;
+    display:flex; align-items:center; justify-content:center; color:var(--ink-faint);
+    background:rgba(0,0,0,.3); opacity:0; transition:.15s;
+  }
+  .ichannel-slot:hover .ichannel-slot-clear{ opacity:1; }
+  .ichannel-slot-clear:hover{ color:var(--ember); background:rgba(0,0,0,.5); }
+
+  /* -- Modal -- */
+  .channel-picker-modal{
+    position:fixed; inset:0; z-index:160; display:none; align-items:center; justify-content:center;
+    background:rgba(4,5,6,.78); backdrop-filter:blur(3px);
+  }
+  .channel-picker-modal.show{ display:flex; }
+  .cp-card-wrap{
+    width:560px; max-width:94vw; max-height:84vh; display:flex; flex-direction:column;
+    background:linear-gradient(180deg,#15181e,#101216); border:1px solid var(--line); border-radius:10px;
+    box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(201,161,90,.06); overflow:hidden;
+  }
+  .cp-head{
+    display:flex; align-items:center; justify-content:space-between; padding:14px 16px 10px;
+    border-bottom:1px solid var(--line-soft); flex:0 0 auto;
+  }
+  .cp-title{ font-size:13px; font-weight:600; letter-spacing:.02em; color:var(--ink); font-family:'JetBrains Mono',monospace; }
+
+  .cp-tabs{ display:flex; gap:2px; padding:8px 12px 0; flex:0 0 auto; overflow-x:auto; border-bottom:1px solid var(--line-soft); }
+  .cp-tab{
+    padding:7px 12px; font-family:'Space Grotesk',sans-serif; font-size:11px; color:var(--ink-faint);
+    cursor:pointer; white-space:nowrap; border-bottom:2px solid transparent; transition:.15s;
+  }
+  .cp-tab:hover{ color:var(--ink); }
+  .cp-tab.active{ color:var(--brass-bright); font-weight:600; border-bottom-color:var(--brass); }
+
+  .cp-grid{
+    flex:1 1 auto; overflow-y:auto; display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;
+    padding:14px; align-content:start; min-height:260px;
+  }
+  .cp-card{
+    background:var(--panel); border:1px solid var(--line-soft); border-radius:6px; padding:0 0 8px;
+    cursor:pointer; transition:.15s; overflow:hidden;
+  }
+  .cp-card:hover{ border-color:var(--brass-dim); transform:translateY(-1px); }
+  .cp-card-thumb{
+    width:100%; aspect-ratio:3/2; background:linear-gradient(135deg,#1c2027,#14171c);
+    display:flex; align-items:center; justify-content:center; border-bottom:1px solid var(--line-soft);
+  }
+  .cp-thumb-img{ width:100%; height:100%; object-fit:cover; }
+  .cp-thumb-glyph{ font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; color:var(--brass-dim); }
+  .cp-thumb-pass{ color:var(--patina); }
+  .cp-thumb-special{ color:var(--ember); font-size:20px; }
+  .cp-card-name{ font-size:11px; font-weight:700; color:var(--ink); padding:7px 8px 0; }
+  .cp-card-author{ font-size:9.5px; color:var(--ink-faint); padding:1px 8px 0; }
+  .cp-card-meta{ font-size:9px; font-family:'JetBrains Mono',monospace; color:var(--ink-dim); padding:3px 8px 0; }
+
+  .cp-empty{
+    grid-column:1/-1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:4px; padding:40px 10px; color:var(--ink-faint); font-size:11.5px; text-align:center;
+  }
+  .cp-empty-sub{ font-size:10px; color:var(--ink-faint); opacity:.8; }
+
+  .cp-pagination{
+    display:flex; align-items:center; justify-content:center; gap:4px; padding:8px 12px 12px; flex:0 0 auto;
+  }
+  .cp-page-btn{
+    min-width:22px; height:22px; padding:0 5px; border-radius:4px; background:var(--panel);
+    border:1px solid var(--line-soft); color:var(--ink-dim); font-family:'JetBrains Mono',monospace;
+    font-size:10.5px; cursor:pointer; transition:.15s;
+  }
+  .cp-page-btn:hover:not(:disabled){ color:var(--brass-bright); border-color:var(--brass-dim); }
+  .cp-page-btn:disabled{ opacity:.35; cursor:default; }
+  .cp-page-num.active{ background:rgba(201,161,90,.16); color:var(--brass-bright); font-weight:600; }

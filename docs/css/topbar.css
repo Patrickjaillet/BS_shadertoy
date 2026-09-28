@@ -1,0 +1,46 @@
+  /* ---- Top bar ---- */
+  .topbar{
+    height:56px; flex:0 0 auto; display:flex; align-items:center; justify-content:space-between;
+    padding:0 18px; background:linear-gradient(180deg, #101319, #0c0e12);
+    border-bottom:1px solid var(--line); position:relative; z-index:30;
+  }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .brand-mark{ width:34px; height:34px; flex:0 0 auto; }
+  .brand-text h1{
+    margin:0; font-size:15px; letter-spacing:.14em; font-weight:600;
+    color:var(--brass-bright); font-family:'Space Grotesk',sans-serif;
+  }
+  .brand-text p{ margin:1px 0 0; font-size:10px; color:var(--ink-faint); letter-spacing:.06em; }
+
+  .telemetry{ display:flex; align-items:center; gap:0; }
+  .tele-item{ display:flex; align-items:center; gap:7px; padding:0 16px; position:relative; }
+  .tele-item + .tele-item::before{
+    content:""; position:absolute; left:0; top:50%; transform:translateY(-50%);
+    width:1px; height:18px; background:var(--line);
+  }
+  .tele-label{ font-size:9.5px; letter-spacing:.1em; color:var(--ink-faint); text-transform:uppercase; }
+  .tele-value{ font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:500; }
+
+  .preset-wrap{ display:flex; align-items:center; gap:10px; }
+  .preset-label{ font-size:10px; letter-spacing:.1em; color:var(--ink-faint); text-transform:uppercase; }
+  .preset-select{
+    appearance:none; background:var(--panel); border:1px solid var(--line); color:var(--brass-bright);
+    font-family:'Space Grotesk',sans-serif; font-size:12px; padding:7px 30px 7px 12px; border-radius:3px;
+    cursor:pointer; position:relative;
+  }
+  .preset-select-box{ position:relative; }
+  .preset-select-box svg{ position:absolute; right:9px; top:50%; transform:translateY(-50%); pointer-events:none; }
+
+  /* ---- Project controls (Lot 8) : nom + New / Open / Save ---- */
+  .project-wrap{ display:flex; align-items:center; gap:6px; }
+  .project-name-input{
+    width:140px; background:var(--panel); border:1px solid var(--line); color:var(--ink);
+    font-family:'Space Grotesk',sans-serif; font-size:12px; padding:6px 10px; border-radius:3px; outline:none;
+  }
+  .project-name-input:focus{ border-color:var(--brass-dim); color:var(--brass-bright); }
+  .project-btn{
+    display:flex; align-items:center; gap:6px; height:29px; padding:0 10px; border-radius:3px;
+    background:var(--panel); border:1px solid var(--line); color:var(--ink-dim); font-size:11px;
+    font-family:'Space Grotesk',sans-serif; cursor:pointer; transition:.15s; letter-spacing:.02em;
+  }
+  .project-btn:hover{ border-color:var(--brass-dim); color:var(--brass-bright); }

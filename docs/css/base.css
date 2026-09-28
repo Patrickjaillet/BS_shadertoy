@@ -1,0 +1,85 @@
+  :root{
+    --void: #07080a;
+    --charcoal: #0f1114;
+    --panel: #14171c;
+    --panel-2: #191d23;
+    --line: #262b33;
+    --line-soft: #1c2027;
+    --brass: #c9a15a;
+    --brass-bright: #f0d28f;
+    --brass-dim: #8a6f3f;
+    --bronze: #8a5a3a;
+    --patina: #5fae94;
+    --ember: #d9694a;
+    --ink: #d7d3c8;
+    --ink-dim: #7c8089;
+    --ink-faint: #4b4f57;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--void);
+    color:var(--ink);
+    font-family:'Space Grotesk', sans-serif;
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+    user-select:none;
+  }
+  .serif{ font-family:'Fraunces', serif; }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+
+  /* subtle grain */
+  .grain{
+    position:fixed; inset:0; pointer-events:none; z-index:200; opacity:.035; mix-blend-mode:overlay;
+  }
+
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+  ::-webkit-scrollbar-thumb{ background:#242832; border-radius:4px; }
+  ::-webkit-scrollbar-thumb:hover{ background:var(--brass-dim); }
+
+  .CodeMirror{
+    height:100% !important;
+    font-family:'JetBrains Mono', monospace !important;
+    font-size:12.5px !important;
+    line-height:1.65 !important;
+    background:var(--charcoal) !important;
+    color:#c9cdd6 !important;
+    padding-top:4px;
+  }
+  .CodeMirror-gutters{ background:var(--charcoal) !important; border-right:1px solid var(--line-soft) !important; }
+  .CodeMirror-linenumber{ color:#3a3f49 !important; }
+  .CodeMirror-cursor{ border-left:1.5px solid var(--brass-bright) !important; }
+  .cm-def{ color:#e8b768 !important; }
+  .cm-number{ color:var(--patina) !important; }
+  .cm-keyword{ color:#c586c0 !important; }
+  .cm-comment{ color:#4b5566 !important; font-style:italic; }
+
+  /* ---- Layout shell ---- */
+  .app{ height:100vh; width:100vw; display:flex; flex-direction:column; }
+
+  /* ---- Body split ---- */
+  .body-split{ flex:1 1 auto; display:flex; min-height:0; position:relative; }
+
+  /* ---- Footer ---- */
+  .statusbar{
+    height:26px; flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; padding:0 16px;
+    background:#0a0b0d; border-top:1px solid var(--line); font-size:10px; color:var(--ink-faint); letter-spacing:.04em;
+  }
+
+  /* ---- Toast ---- */
+  .toast{
+    position:fixed; bottom:22px; right:22px; z-index:100; display:flex; align-items:center; gap:9px;
+    background:linear-gradient(180deg,#1a1e25,#14171c); border:1px solid var(--brass-dim); border-radius:6px;
+    padding:10px 16px; font-size:12px; color:var(--ink); transform:translateY(14px); opacity:0; pointer-events:none;
+    transition:all .3s cubic-bezier(.2,.9,.3,1); box-shadow:0 12px 30px rgba(0,0,0,.5);
+  }
+  .toast.show{ transform:translateY(0); opacity:1; }
+
+  /* custom svg slider (shared by Inspector param cards and the Export modal duration control) */
+  .svg-slider{ display:block; width:100%; height:18px; cursor:pointer; touch-action:none; }
+  .svg-slider .track{ stroke:#262b33; }
+  .svg-slider .fill{ stroke:url(#brassLine); }
+  .svg-slider .thumb-halo{ opacity:0; transition:opacity .15s; }
+  .svg-slider:hover .thumb-halo, .svg-slider.dragging .thumb-halo{ opacity:.35; }

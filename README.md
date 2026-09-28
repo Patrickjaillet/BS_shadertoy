@@ -50,7 +50,6 @@ You can also try it online via GitHub Pages: **[patrickjaillet.github.io/bs](htt
 ## 📚 Documentation
 
 - [`docs/README.md`](./docs/README.md) — code structure, script load order, Sound shader, Music, Keyboard, projects.
-- [`ROADMAP.md`](./ROADMAP.md) — project history, design decisions and remaining work.
 
 ## 🛠️ Tech Stack
 
